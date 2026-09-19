@@ -104,6 +104,12 @@ public class CategoryServiceImpl implements CategoryService{
 
         ValidationUtil.validateMaxLength(category.getName().trim(), 100, "Category Name");
 
-        ValidationUtil.validateMaxLength(category.getDescription().trim(), 500, "Category Description");
+        if (category.getDescription() != null) {
+            ValidationUtil.validateMaxLength(
+                    category.getDescription().trim(),
+                    500,
+                    "Category Description"
+            );
+        }
     }
 }
