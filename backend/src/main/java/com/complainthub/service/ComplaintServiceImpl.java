@@ -260,7 +260,7 @@ public class ComplaintServiceImpl implements ComplaintService {
         }
 
         if (complaint.getUser().getId() != userId) {
-            throw new IllegalArgumentException("Only the complaint owner can close the complaint.);
+            throw new IllegalArgumentException("Only the complaint owner can close the complaint.");
         }
 
         if (complaint.getStatus() != ComplaintStatus.RESOLVED) {
