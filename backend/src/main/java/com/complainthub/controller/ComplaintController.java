@@ -182,11 +182,13 @@ public class ComplaintController extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response
     ) throws ServletException, IOException {
+
         response.setContentType("text/plain");
         response.setCharacterEncoding("UTF-8");
 
         try {
-            Long authenticatedUserId = getAuthenticatedUserId(request);
+            long authenticatedUserId = getAuthenticatedUserId(request);
+
             String pathInfo = request.getPathInfo();
 
             if (pathInfo == null || pathInfo.equals("/")) {
@@ -194,50 +196,91 @@ public class ComplaintController extends HttpServlet {
             }
 
             String[] pathParts = pathInfo.split("/");
-            if (pathParts.length != 3
-                    || !pathParts[2].equalsIgnoreCase("reopen")) {
-                throw new IllegalArgumentException("Invalid complaint reopen URL.");
+            if (pathParts.length != 3) {
+                throw new IllegalArgumentException("Invalid complaint status URL.");
             }
 
             long complaintId = parseId(pathParts[1], "Complaint ID");
 
-            Complaint reopenedComplaint =
-                    complaintService.reopenComplaint(
-                            complaintId,
-                            authenticatedUserId
+            String action = pathParts[2].toLowerCase();
+
+            if (action.equals("reopen")) {
+                Complaint reopenedComplaint =
+                        complaintService.reopenComplaint(complaintId, authenticatedUserId);
+
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().println("Complaint reopened successfully.");
+                response.getWriter().println("Complaint ID: " + reopenedComplaint.getId());
+                response.getWriter().println("Status: " + reopenedComplaint.getStatus());
+                response.getWriter().println("Was Resolved: " + reopenedComplaint.isWasResolved());
+
+                return;
+            }
+
+            if (action.equals("close")) {
+
+                boolean closed =
+                        complaintService.closeComplaint(
+                                complaintId,
+                                authenticatedUserId
+                        );
+
+                if (!closed) {
+                    response.setStatus(
+                            HttpServletResponse.SC_NOT_FOUND
                     );
 
-            response.setStatus(
-                    HttpServletResponse.SC_OK
-            );
-            response.getWriter().println(
-                    "Complaint reopened successfully."
-            );
-            response.getWriter().println(
-                    "Complaint ID: "
-                            + reopenedComplaint.getId()
-            );
-            response.getWriter().println(
-                    "Status: "
-                            + reopenedComplaint.getStatus()
-            );
-            response.getWriter().println(
-                    "Was Resolved: "
-                            + reopenedComplaint.isWasResolved()
+                    response.getWriter().println(
+                            "Complaint could not be closed."
+                    );
+
+                    return;
+                }
+
+                response.setStatus(
+                        HttpServletResponse.SC_OK
+                );
+
+                response.getWriter().println(
+                        "Complaint closed successfully."
+                );
+
+                response.getWriter().println(
+                        "Complaint ID: "
+                                + complaintId
+                );
+
+                response.getWriter().println(
+                        "Status: CLOSED"
+                );
+
+                return;
+            }
+
+            throw new IllegalArgumentException(
+                    "Invalid complaint action. Use /reopen or /close."
             );
 
         } catch (IllegalArgumentException exception) {
+
             response.setStatus(
                     HttpServletResponse.SC_BAD_REQUEST
             );
+
             response.getWriter().println(
                     "Validation Error: "
                             + exception.getMessage()
             );
 
         } catch (Exception exception) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().println("Unable to reopen complaint.");
+
+            response.setStatus(
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            );
+
+            response.getWriter().println(
+                    "Unable to update complaint status."
+            );
         }
     }
 

@@ -239,10 +239,37 @@ public class ComplaintServiceImpl implements ComplaintService {
             throw new IllegalArgumentException("Only a resolved complaint can be reopened.");
         }
 
-        complaint.setStatus(ComplaintStatus.OPEN);
+        complaint.setStatus(ComplaintStatus.IN_PROGRESS);
         complaint.setWasResolved(true);
-
         return complaintDao.update(complaint);
+    }
+
+    @Override
+    public boolean closeComplaint(
+            long complaintId,
+            long userId
+    ) {
+        Complaint complaint = complaintDao.findById(complaintId);
+
+        if (complaint == null) {
+            throw new IllegalArgumentException("Complaint not found.");
+        }
+
+        if (complaint.getUser() == null) {
+            throw new IllegalArgumentException("Complaint owner is missing.");
+        }
+
+        if (complaint.getUser().getId() != userId) {
+            throw new IllegalArgumentException("Only the complaint owner can close the complaint.);
+        }
+
+        if (complaint.getStatus() != ComplaintStatus.RESOLVED) {
+            throw new IllegalArgumentException("Only a resolved complaint can be closed.");
+        }
+
+        complaint.setStatus(ComplaintStatus.CLOSED);
+        complaintDao.update(complaint);
+        return true;
     }
 
     // -------- Validate Method --------
