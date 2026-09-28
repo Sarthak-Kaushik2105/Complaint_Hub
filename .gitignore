@@ -23,7 +23,9 @@ target/
 *.iml
 *.ipr
 
-### Smart Tomcat
+# Smart Tomcat
+.smarttomcat/
+
 # Local Tomcat installation/deployment
 tomcat/
 apache-tomcat/
