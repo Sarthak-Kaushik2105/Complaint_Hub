@@ -23,6 +23,23 @@ target/
 *.iml
 *.ipr
 
+# Smart Tomcat
+.smarttomcat/
+
+# Local Tomcat installation/deployment
+tomcat/
+apache-tomcat/
+apache-tomcat-*/
+tomcat-*/
+logs/
+temp/
+work/
+webapps/
+.smarttomcat/
+smart-tomcat/
+.smart-tomcat/
+catalina.out
+
 ### IntelliJ IDEA compiled output ###
 out/
 
@@ -59,3 +76,6 @@ uploads/
 
 # bug-fix notes
 notes.md
+
+# Development / test servlets
+backend/src/main/java/com/complainthub/test/
