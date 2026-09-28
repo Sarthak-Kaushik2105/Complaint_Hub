@@ -74,3 +74,6 @@ uploads/
 
 # bug-fix notes
 notes.md
+
+# Development / test servlets
+backend/src/main/java/com/complainthub/test/
