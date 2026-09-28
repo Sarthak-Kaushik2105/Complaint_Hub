@@ -23,6 +23,21 @@ target/
 *.iml
 *.ipr
 
+### Smart Tomcat
+# Local Tomcat installation/deployment
+tomcat/
+apache-tomcat/
+apache-tomcat-*/
+tomcat-*/
+logs/
+temp/
+work/
+webapps/
+.smarttomcat/
+smart-tomcat/
+.smart-tomcat/
+catalina.out
+
 ### IntelliJ IDEA compiled output ###
 out/
 
