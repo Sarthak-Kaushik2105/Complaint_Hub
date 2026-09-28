@@ -10,6 +10,7 @@ import com.complainthub.service.ComplaintUpdateServiceImpl;
 import com.complainthub.util.AuthenticationConstants;
 import com.complainthub.util.AuthorizationException;
 import com.complainthub.util.AuthorizationUtil;
+import com.complainthub.util.ResponseUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -19,7 +20,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/api/complaint-updates/*")
 public class ComplaintUpdateController extends HttpServlet {
@@ -35,42 +39,97 @@ public class ComplaintUpdateController extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response
     ) throws ServletException, IOException {
-        configureResponse(response);
+
         try {
-            long authenticatedUserId = getAuthenticatedUserId(request);
-            long complaintId = extractComplaintId(request);
-            String message = request.getParameter("message");
-            String visibleToUserParameter = request.getParameter("visibleToUser");
-            boolean visibleToUser = parseVisibleToUser(visibleToUserParameter);
+            long authenticatedUserId =
+                    getAuthenticatedUserId(request);
 
-            User updatedBy = new User();
+            long complaintId =
+                    extractComplaintId(request);
 
-            updatedBy.setId(authenticatedUserId);
+            String message =
+                    request.getParameter("message");
 
-            Complaint complaint = new Complaint();
+            String visibleToUserParameter =
+                    request.getParameter("visibleToUser");
 
-            complaint.setId(complaintId);
+            boolean visibleToUser =
+                    parseVisibleToUser(
+                            visibleToUserParameter
+                    );
 
-            ComplaintUpdate complaintUpdate = new ComplaintUpdate();
+            User updatedBy =
+                    new User();
 
-            complaintUpdate.setComplaint(complaint);
-            complaintUpdate.setUpdatedBy(updatedBy);
-            complaintUpdate.setMessage(message);
-            complaintUpdate.setVisibleToUser(visibleToUser);
+            updatedBy.setId(
+                    authenticatedUserId
+            );
 
-            ComplaintUpdate createdUpdate = complaintUpdateService.createUpdate(complaintUpdate);
+            Complaint complaint =
+                    new Complaint();
 
-            response.setStatus(HttpServletResponse.SC_CREATED);
-            response.getWriter().println("Complaint update created successfully.");
+            complaint.setId(
+                    complaintId
+            );
 
-            printComplaintUpdate(createdUpdate, response);
+            ComplaintUpdate complaintUpdate =
+                    new ComplaintUpdate();
+
+            complaintUpdate.setComplaint(
+                    complaint
+            );
+
+            complaintUpdate.setUpdatedBy(
+                    updatedBy
+            );
+
+            complaintUpdate.setMessage(
+                    message
+            );
+
+            complaintUpdate.setVisibleToUser(
+                    visibleToUser
+            );
+
+            ComplaintUpdate createdUpdate =
+                    complaintUpdateService.createUpdate(
+                            complaintUpdate
+                    );
+
+            ResponseUtil.sendSuccess(
+                    response,
+                    HttpServletResponse.SC_CREATED,
+                    "Complaint update created successfully.",
+                    toUpdateResponse(
+                            createdUpdate
+                    )
+            );
+
         } catch (AuthorizationException exception) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, exception.getMessage());
+
+            ResponseUtil.sendError(
+                    response,
+                    HttpServletResponse.SC_FORBIDDEN,
+                    exception.getMessage()
+            );
+
         } catch (IllegalArgumentException exception) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, exception.getMessage());
+
+            ResponseUtil.sendError(
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    exception.getMessage()
+            );
+
         } catch (Exception exception) {
+
             exception.printStackTrace();
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unable to create complaint update.");
+
+            ResponseUtil.sendError(
+                    response,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Unable to create complaint update."
+            );
         }
     }
 
@@ -79,50 +138,84 @@ public class ComplaintUpdateController extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response
     ) throws ServletException, IOException {
-        configureResponse(response);
-        try {
-            long authenticatedUserId = getAuthenticatedUserId(request);
-            long complaintId = extractComplaintId(request);
 
-            Complaint complaint = complaintService.getComplaintById(complaintId);
+        try {
+            long authenticatedUserId =
+                    getAuthenticatedUserId(request);
+
+            long complaintId =
+                    extractComplaintId(request);
+
+            Complaint complaint =
+                    complaintService.getComplaintById(
+                            complaintId
+                    );
 
             if (complaint == null) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Complaint not found.");
+
+                ResponseUtil.sendError(
+                        response,
+                        HttpServletResponse.SC_NOT_FOUND,
+                        "Complaint not found."
+                );
+
                 return;
             }
-
-//            HttpSession session =
-//                    request.getSession(false);
 
             if (AuthorizationUtil.isAdmin(request)) {
-                List<ComplaintUpdate> updates =
-                        complaintUpdateService.getUpdatesByComplaint(complaintId);
 
-                writeUpdates(updates, response);
+                List<ComplaintUpdate> updates =
+                        complaintUpdateService
+                                .getUpdatesByComplaint(
+                                        complaintId
+                                );
+
+                writeUpdates(
+                        updates,
+                        response
+                );
+
                 return;
             }
 
-            AuthorizationUtil.requireOwnerOrAdmin(request, complaint.getUser().getId());
+            AuthorizationUtil.requireOwnerOrAdmin(
+                    request,
+                    complaint.getUser().getId()
+            );
+
             List<ComplaintUpdate> updates =
                     complaintUpdateService
                             .getVisibleUpdatesByComplaint(
                                     complaintId
                             );
 
-            writeUpdates(updates, response);
+            writeUpdates(
+                    updates,
+                    response
+            );
+
         } catch (AuthorizationException exception) {
-            response.sendError(
+
+            ResponseUtil.sendError(
+                    response,
                     HttpServletResponse.SC_FORBIDDEN,
                     exception.getMessage()
             );
+
         } catch (IllegalArgumentException exception) {
-            response.sendError(
+
+            ResponseUtil.sendError(
+                    response,
                     HttpServletResponse.SC_BAD_REQUEST,
                     exception.getMessage()
             );
+
         } catch (Exception exception) {
+
             exception.printStackTrace();
-            response.sendError(
+
+            ResponseUtil.sendError(
+                    response,
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Unable to retrieve complaint updates."
             );
@@ -133,63 +226,134 @@ public class ComplaintUpdateController extends HttpServlet {
             List<ComplaintUpdate> updates,
             HttpServletResponse response
     ) throws IOException {
-        if (updates == null || updates.isEmpty()) {
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().println("No complaint updates found.");
-            return;
+
+        List<Map<String, Object>> updateResponses =
+                new ArrayList<>();
+
+        if (updates != null) {
+
+            for (ComplaintUpdate update : updates) {
+
+                updateResponses.add(
+                        toUpdateResponse(update)
+                );
+            }
         }
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("Total updates: " + updates.size());
-        response.getWriter().println();
+        Map<String, Object> data =
+                new LinkedHashMap<>();
 
-        for (ComplaintUpdate update : updates) {
-            printComplaintUpdate(update, response);
-        }
+        data.put(
+                "total",
+                updateResponses.size()
+        );
+
+        data.put(
+                "updates",
+                updateResponses
+        );
+
+        ResponseUtil.sendSuccess(
+                response,
+                HttpServletResponse.SC_OK,
+                updateResponses.isEmpty()
+                        ? "No complaint updates found."
+                        : "Complaint updates retrieved successfully.",
+                data
+        );
     }
 
-    private void printComplaintUpdate(
-            ComplaintUpdate complaintUpdate,
-            HttpServletResponse response
-    ) throws IOException {
+    private Map<String, Object> toUpdateResponse(
+            ComplaintUpdate complaintUpdate
+    ) {
 
-        response.getWriter().println(
-                "--------------------------------------"
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "id",
+                complaintUpdate.getId()
         );
 
-        response.getWriter().println(
-                "Update ID: "
-                        + complaintUpdate.getId()
+        if (complaintUpdate.getComplaint() != null) {
+
+            data.put(
+                    "complaintId",
+                    complaintUpdate
+                            .getComplaint()
+                            .getId()
+            );
+
+        } else {
+
+            data.put(
+                    "complaintId",
+                    null
+            );
+        }
+
+        if (complaintUpdate.getUpdatedBy() != null) {
+
+            Map<String, Object> updatedBy =
+                    new LinkedHashMap<>();
+
+            updatedBy.put(
+                    "id",
+                    complaintUpdate
+                            .getUpdatedBy()
+                            .getId()
+            );
+
+            updatedBy.put(
+                    "name",
+                    complaintUpdate
+                            .getUpdatedBy()
+                            .getName()
+            );
+
+            updatedBy.put(
+                    "email",
+                    complaintUpdate
+                            .getUpdatedBy()
+                            .getEmail()
+            );
+
+            updatedBy.put(
+                    "role",
+                    complaintUpdate
+                            .getUpdatedBy()
+                            .getRole()
+            );
+
+            data.put(
+                    "updatedBy",
+                    updatedBy
+            );
+
+        } else {
+
+            data.put(
+                    "updatedBy",
+                    null
+            );
+        }
+
+        data.put(
+                "message",
+                complaintUpdate.getMessage()
         );
 
-        response.getWriter().println(
-                "Complaint ID: "
-                        + complaintUpdate.getComplaint().getId()
+        data.put(
+                "visibleToUser",
+                complaintUpdate.getVisibleToUser()
         );
 
-        response.getWriter().println(
-                "Updated By User ID: "
-                        + complaintUpdate.getUpdatedBy().getId()
+        data.put(
+                "createdAt",
+                complaintUpdate.getCreatedAt()
         );
 
-        response.getWriter().println(
-                "Message: "
-                        + complaintUpdate.getMessage()
-        );
-
-        response.getWriter().println(
-                "Visible To User: "
-                        + complaintUpdate.getVisibleToUser()
-        );
-
-        response.getWriter().println(
-                "Created At: "
-                        + complaintUpdate.getCreatedAt()
-        );
-
-        response.getWriter().println(
-                "--------------------------------------"
-        );
+        return data;
     }
 
     private long getAuthenticatedUserId(
@@ -200,6 +364,7 @@ public class ComplaintUpdateController extends HttpServlet {
                 request.getSession(false);
 
         if (session == null) {
+
             throw new IllegalArgumentException(
                     "Authenticated session is required."
             );
@@ -211,16 +376,21 @@ public class ComplaintUpdateController extends HttpServlet {
                 );
 
         if (userId == null) {
+
             throw new IllegalArgumentException(
                     "Authenticated User ID is missing."
             );
         }
 
         try {
+
             long parsedUserId =
-                    Long.parseLong(userId.toString());
+                    Long.parseLong(
+                            userId.toString()
+                    );
 
             if (parsedUserId <= 0) {
+
                 throw new IllegalArgumentException(
                         "Authenticated User ID is invalid."
                 );
@@ -266,7 +436,9 @@ public class ComplaintUpdateController extends HttpServlet {
          * pathParts[2] = "42"
          */
         if (pathParts.length != 3
-                || !"complaint".equalsIgnoreCase(pathParts[1])) {
+                || !"complaint".equalsIgnoreCase(
+                pathParts[1]
+        )) {
 
             throw new IllegalArgumentException(
                     "Invalid complaint update URL."
@@ -284,17 +456,21 @@ public class ComplaintUpdateController extends HttpServlet {
             String fieldName
     ) {
 
-        if (value == null || value.isBlank()) {
+        if (value == null
+                || value.isBlank()) {
+
             throw new IllegalArgumentException(
                     fieldName + " is required."
             );
         }
 
         try {
+
             long id =
                     Long.parseLong(value);
 
             if (id <= 0) {
+
                 throw new IllegalArgumentException(
                         fieldName
                                 + " must be greater than zero."
@@ -320,7 +496,9 @@ public class ComplaintUpdateController extends HttpServlet {
          * If the parameter is omitted, the update is
          * not visible to normal users by default.
          */
-        if (value == null || value.isBlank()) {
+        if (value == null
+                || value.isBlank()) {
+
             return false;
         }
 
@@ -339,13 +517,5 @@ public class ComplaintUpdateController extends HttpServlet {
         throw new IllegalArgumentException(
                 "Visible To User must be true or false."
         );
-    }
-
-    private void configureResponse(
-            HttpServletResponse response
-    ) {
-
-        response.setContentType("text/plain");
-        response.setCharacterEncoding("UTF-8");
     }
 }

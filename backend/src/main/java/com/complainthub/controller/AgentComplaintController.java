@@ -13,6 +13,8 @@ import com.complainthub.service.ComplaintUpdateService;
 import com.complainthub.service.ComplaintUpdateServiceImpl;
 import com.complainthub.util.AuthenticationConstants;
 import com.complainthub.util.AuthorizationUtil;
+import com.complainthub.util.ResponseUtil;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -21,7 +23,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/api/agent/complaints/*")
 public class AgentComplaintController extends HttpServlet {
@@ -33,8 +38,10 @@ public class AgentComplaintController extends HttpServlet {
     @Override
     public void init() throws ServletException {
         complaintService = new ComplaintServiceImpl();
-        complaintAssignmentService = new ComplaintAssignmentServiceImpl();
-        complaintUpdateService = new ComplaintUpdateServiceImpl();
+        complaintAssignmentService =
+                new ComplaintAssignmentServiceImpl();
+        complaintUpdateService =
+                new ComplaintUpdateServiceImpl();
     }
 
     @Override
@@ -49,17 +56,29 @@ public class AgentComplaintController extends HttpServlet {
                     UserRole.AGENT
             );
 
-            String pathInfo = request.getPathInfo();
+            String pathInfo =
+                    request.getPathInfo();
 
-            if (pathInfo == null || pathInfo.equals("/")) {
-                getAssignedComplaints(request, response);
+            if (pathInfo == null
+                    || pathInfo.equals("/")) {
+
+                getAssignedComplaints(
+                        request,
+                        response
+                );
                 return;
             }
 
-            String[] pathParts = pathInfo.split("/");
+            String[] pathParts =
+                    pathInfo.split("/");
 
             if (pathParts.length == 2) {
-                long complaintId = parseId(pathParts[1], "Complaint Id");
+
+                long complaintId =
+                        parseId(
+                                pathParts[1],
+                                "Complaint Id"
+                        );
 
                 getAssignedComplaintById(
                         request,
@@ -69,31 +88,36 @@ public class AgentComplaintController extends HttpServlet {
                 return;
             }
 
-            sendError(
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_NOT_FOUND,
                     "Endpoint not found."
             );
 
         } catch (IllegalArgumentException e) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_BAD_REQUEST,
                     e.getMessage()
             );
+
         } catch (SecurityException e) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_FORBIDDEN,
                     e.getMessage()
             );
+
         } catch (Exception e) {
+
             getServletContext().log(
                     "Failed to process agent GET request.",
                     e
             );
 
-            sendError(
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "An internal server error occurred."
@@ -113,10 +137,13 @@ public class AgentComplaintController extends HttpServlet {
                     UserRole.AGENT
             );
 
-            String pathInfo = request.getPathInfo();
+            String pathInfo =
+                    request.getPathInfo();
 
-            if (pathInfo == null || pathInfo.equals("/")) {
-                sendError(
+            if (pathInfo == null
+                    || pathInfo.equals("/")) {
+
+                ResponseUtil.sendError(
                         response,
                         HttpServletResponse.SC_BAD_REQUEST,
                         "Complaint Id is required."
@@ -124,21 +151,22 @@ public class AgentComplaintController extends HttpServlet {
                 return;
             }
 
-            String[] pathParts = pathInfo.split("/");
+            String[] pathParts =
+                    pathInfo.split("/");
 
             /*
              * Expected endpoint:
              *
              * POST /api/agent/complaints/{complaintId}/updates
              */
-            if (
-                    pathParts.length == 3
-                            && pathParts[2].equals("updates")
-            ) {
-                long complaintId = parseId(
-                        pathParts[1],
-                        "Complaint Id"
-                );
+            if (pathParts.length == 3
+                    && pathParts[2].equals("updates")) {
+
+                long complaintId =
+                        parseId(
+                                pathParts[1],
+                                "Complaint Id"
+                        );
 
                 createComplaintUpdate(
                         request,
@@ -148,31 +176,36 @@ public class AgentComplaintController extends HttpServlet {
                 return;
             }
 
-            sendError(
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_NOT_FOUND,
                     "Endpoint not found."
             );
 
         } catch (IllegalArgumentException e) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_BAD_REQUEST,
                     e.getMessage()
             );
+
         } catch (SecurityException e) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_FORBIDDEN,
                     e.getMessage()
             );
+
         } catch (Exception e) {
+
             getServletContext().log(
                     "Failed to process agent POST request.",
                     e
             );
 
-            sendError(
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "An internal server error occurred."
@@ -192,10 +225,13 @@ public class AgentComplaintController extends HttpServlet {
                     UserRole.AGENT
             );
 
-            String pathInfo = request.getPathInfo();
+            String pathInfo =
+                    request.getPathInfo();
 
-            if (pathInfo == null || pathInfo.equals("/")) {
-                sendError(
+            if (pathInfo == null
+                    || pathInfo.equals("/")) {
+
+                ResponseUtil.sendError(
                         response,
                         HttpServletResponse.SC_BAD_REQUEST,
                         "Complaint Id is required."
@@ -203,21 +239,22 @@ public class AgentComplaintController extends HttpServlet {
                 return;
             }
 
-            String[] pathParts = pathInfo.split("/");
+            String[] pathParts =
+                    pathInfo.split("/");
 
             /*
              * Expected endpoint:
              *
              * PUT /api/agent/complaints/{complaintId}/status
              */
-            if (
-                    pathParts.length == 3
-                            && pathParts[2].equals("status")
-            ) {
-                long complaintId = parseId(
-                        pathParts[1],
-                        "Complaint Id"
-                );
+            if (pathParts.length == 3
+                    && pathParts[2].equals("status")) {
+
+                long complaintId =
+                        parseId(
+                                pathParts[1],
+                                "Complaint Id"
+                        );
 
                 updateComplaintStatus(
                         request,
@@ -227,31 +264,36 @@ public class AgentComplaintController extends HttpServlet {
                 return;
             }
 
-            sendError(
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_NOT_FOUND,
                     "Endpoint not found."
             );
 
         } catch (IllegalArgumentException e) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_BAD_REQUEST,
                     e.getMessage()
             );
+
         } catch (SecurityException e) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_FORBIDDEN,
                     e.getMessage()
             );
+
         } catch (Exception e) {
+
             getServletContext().log(
                     "Failed to process agent PUT request.",
                     e
             );
 
-            sendError(
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "An internal server error occurred."
@@ -269,16 +311,15 @@ public class AgentComplaintController extends HttpServlet {
             HttpServletResponse response
     ) throws IOException {
 
-        long agentId = getLoggedInUserId(request);
+        long agentId =
+                getLoggedInUserId(request);
 
         List<ComplaintAssignment> assignments =
-                complaintAssignmentService.getAssignmentsByAgent(agentId);
+                complaintAssignmentService
+                        .getAssignmentsByAgent(agentId);
 
-        StringBuilder result = new StringBuilder();
-
-        result.append("Assigned complaints:\n");
-
-        boolean foundActiveAssignment = false;
+        List<Map<String, Object>> complaints =
+                new ArrayList<>();
 
         for (ComplaintAssignment assignment : assignments) {
 
@@ -286,46 +327,40 @@ public class AgentComplaintController extends HttpServlet {
                 continue;
             }
 
-            Complaint complaint = assignment.getComplaint();
+            Complaint complaint =
+                    assignment.getComplaint();
 
             if (complaint == null) {
                 continue;
             }
 
-            foundActiveAssignment = true;
-
-            result.append("\n");
-            result.append("Complaint Id: ")
-                    .append(complaint.getId())
-                    .append("\n");
-
-            result.append("Title: ")
-                    .append(complaint.getTitle())
-                    .append("\n");
-
-            result.append("Status: ")
-                    .append(complaint.getStatus())
-                    .append("\n");
-
-            result.append("Priority: ")
-                    .append(complaint.getPriority())
-                    .append("\n");
-
-            result.append("Created At: ")
-                    .append(complaint.getCreatedAt())
-                    .append("\n");
-
-            result.append("-------------------------");
+            complaints.add(
+                    toComplaintSummaryResponse(
+                            complaint
+                    )
+            );
         }
 
-        if (!foundActiveAssignment) {
-            result.append("No active complaints assigned to you.");
-        }
+        Map<String, Object> data =
+                new LinkedHashMap<>();
 
-        writeResponse(
+        data.put(
+                "total",
+                complaints.size()
+        );
+
+        data.put(
+                "complaints",
+                complaints
+        );
+
+        ResponseUtil.sendSuccess(
                 response,
                 HttpServletResponse.SC_OK,
-                result.toString()
+                complaints.isEmpty()
+                        ? "No active complaints assigned to you."
+                        : "Assigned complaints retrieved successfully.",
+                data
         );
     }
 
@@ -341,7 +376,8 @@ public class AgentComplaintController extends HttpServlet {
             long complaintId
     ) throws IOException {
 
-        long agentId = getLoggedInUserId(request);
+        long agentId =
+                getLoggedInUserId(request);
 
         ComplaintAssignment assignment =
                 getActiveAssignmentForAgent(
@@ -350,7 +386,8 @@ public class AgentComplaintController extends HttpServlet {
                 );
 
         if (assignment == null) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_FORBIDDEN,
                     "This complaint is not actively assigned to you."
@@ -359,10 +396,13 @@ public class AgentComplaintController extends HttpServlet {
         }
 
         Complaint complaint =
-                complaintService.getComplaintById(complaintId);
+                complaintService.getComplaintById(
+                        complaintId
+                );
 
         if (complaint == null) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_NOT_FOUND,
                     "Complaint not found."
@@ -371,78 +411,22 @@ public class AgentComplaintController extends HttpServlet {
         }
 
         List<ComplaintUpdate> updates =
-                complaintUpdateService.getUpdatesByComplaint(
-                        complaintId
+                complaintUpdateService
+                        .getUpdatesByComplaint(
+                                complaintId
+                        );
+
+        Map<String, Object> data =
+                toComplaintDetailResponse(
+                        complaint,
+                        updates
                 );
 
-        StringBuilder result = new StringBuilder();
-
-        result.append("Complaint Details\n");
-        result.append("=================\n");
-        result.append("Complaint Id: ")
-                .append(complaint.getId())
-                .append("\n");
-
-        result.append("Title: ")
-                .append(complaint.getTitle())
-                .append("\n");
-
-        result.append("Description: ")
-                .append(complaint.getDescription())
-                .append("\n");
-
-        result.append("Status: ")
-                .append(complaint.getStatus())
-                .append("\n");
-
-        result.append("Priority: ")
-                .append(complaint.getPriority())
-                .append("\n");
-
-        result.append("Created At: ")
-                .append(complaint.getCreatedAt())
-                .append("\n");
-
-        result.append("Updated At: ")
-                .append(complaint.getUpdatedAt())
-                .append("\n");
-
-        result.append("\nComplaint Updates\n");
-        result.append("=================\n");
-
-        if (updates.isEmpty()) {
-            result.append("No updates found.\n");
-        } else {
-            for (ComplaintUpdate update : updates) {
-                result.append("\n");
-                result.append("Update Id: ")
-                        .append(update.getId())
-                        .append("\n");
-
-                result.append("Message: ")
-                        .append(update.getMessage())
-                        .append("\n");
-
-                result.append("Updated By: ")
-                        .append(update.getUpdatedBy().getId())
-                        .append("\n");
-
-                result.append("Visible To User: ")
-                        .append(update.getVisibleToUser())
-                        .append("\n");
-
-                result.append("Created At: ")
-                        .append(update.getCreatedAt())
-                        .append("\n");
-
-                result.append("-------------------------\n");
-            }
-        }
-
-        writeResponse(
+        ResponseUtil.sendSuccess(
                 response,
                 HttpServletResponse.SC_OK,
-                result.toString()
+                "Complaint details retrieved successfully.",
+                data
         );
     }
 
@@ -459,7 +443,8 @@ public class AgentComplaintController extends HttpServlet {
             long complaintId
     ) throws IOException {
 
-        long agentId = getLoggedInUserId(request);
+        long agentId =
+                getLoggedInUserId(request);
 
         ComplaintAssignment assignment =
                 getActiveAssignmentForAgent(
@@ -468,7 +453,8 @@ public class AgentComplaintController extends HttpServlet {
                 );
 
         if (assignment == null) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_FORBIDDEN,
                     "You can add updates only to complaints assigned to you."
@@ -476,10 +462,13 @@ public class AgentComplaintController extends HttpServlet {
             return;
         }
 
-        String message = request.getParameter("message");
+        String message =
+                request.getParameter("message");
 
-        if (message == null || message.isBlank()) {
-            sendError(
+        if (message == null
+                || message.isBlank()) {
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_BAD_REQUEST,
                     "Update message is required."
@@ -490,7 +479,9 @@ public class AgentComplaintController extends HttpServlet {
         ComplaintUpdate complaintUpdate =
                 new ComplaintUpdate();
 
-        Complaint complaint = new Complaint();
+        Complaint complaint =
+                new Complaint();
+
         complaint.setId(complaintId);
 
         com.complainthub.entity.User agent =
@@ -498,25 +489,63 @@ public class AgentComplaintController extends HttpServlet {
 
         agent.setId(agentId);
 
-        complaintUpdate.setComplaint(complaint);
-        complaintUpdate.setUpdatedBy(agent);
-        complaintUpdate.setMessage(message.trim());
+        complaintUpdate.setComplaint(
+                complaint
+        );
+
+        complaintUpdate.setUpdatedBy(
+                agent
+        );
+
+        complaintUpdate.setMessage(
+                message.trim()
+        );
 
         /*
          * Agent-created updates are visible to the user.
          */
-        complaintUpdate.setVisibleToUser(true);
+        complaintUpdate.setVisibleToUser(
+                true
+        );
 
         ComplaintUpdate savedUpdate =
                 complaintUpdateService.createUpdate(
                         complaintUpdate
                 );
 
-        writeResponse(
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "id",
+                savedUpdate.getId()
+        );
+
+        data.put(
+                "complaintId",
+                complaintId
+        );
+
+        data.put(
+                "message",
+                savedUpdate.getMessage()
+        );
+
+        data.put(
+                "visibleToUser",
+                savedUpdate.getVisibleToUser()
+        );
+
+        data.put(
+                "createdAt",
+                savedUpdate.getCreatedAt()
+        );
+
+        ResponseUtil.sendSuccess(
                 response,
                 HttpServletResponse.SC_CREATED,
-                "Complaint update created successfully. Update Id: "
-                        + savedUpdate.getId()
+                "Complaint update created successfully.",
+                data
         );
     }
 
@@ -533,7 +562,8 @@ public class AgentComplaintController extends HttpServlet {
             long complaintId
     ) throws IOException {
 
-        long agentId = getLoggedInUserId(request);
+        long agentId =
+                getLoggedInUserId(request);
 
         ComplaintAssignment assignment =
                 getActiveAssignmentForAgent(
@@ -542,7 +572,8 @@ public class AgentComplaintController extends HttpServlet {
                 );
 
         if (assignment == null) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_FORBIDDEN,
                     "You can update only complaints assigned to you."
@@ -550,23 +581,13 @@ public class AgentComplaintController extends HttpServlet {
             return;
         }
 
-        String statusValue = request.getParameter("status");
+        String statusValue =
+                request.getParameter("status");
 
-//        System.out.println("Content-Type: "
-//                + request.getContentType());
-//
-//        System.out.println("Status parameter: ["
-//                + statusValue
-//                + "]");
-//
-//        System.out.println("Request URI: "
-//                + request.getRequestURI());
-//
-//        System.out.println("Path Info: "
-//                + request.getPathInfo());
+        if (statusValue == null
+                || statusValue.isBlank()) {
 
-        if (statusValue == null || statusValue.isBlank()) {
-            sendError(
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_BAD_REQUEST,
                     "Status is required."
@@ -577,11 +598,17 @@ public class AgentComplaintController extends HttpServlet {
         ComplaintStatus newStatus;
 
         try {
-            newStatus = ComplaintStatus.valueOf(
-                    statusValue.trim().toUpperCase()
-            );
+
+            newStatus =
+                    ComplaintStatus.valueOf(
+                            statusValue
+                                    .trim()
+                                    .toUpperCase()
+                    );
+
         } catch (IllegalArgumentException e) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_BAD_REQUEST,
                     "Invalid complaint status."
@@ -590,10 +617,13 @@ public class AgentComplaintController extends HttpServlet {
         }
 
         Complaint complaint =
-                complaintService.getComplaintById(complaintId);
+                complaintService.getComplaintById(
+                        complaintId
+                );
 
         if (complaint == null) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_NOT_FOUND,
                     "Complaint not found."
@@ -608,7 +638,8 @@ public class AgentComplaintController extends HttpServlet {
                 currentStatus,
                 newStatus
         )) {
-            sendError(
+
+            ResponseUtil.sendError(
                     response,
                     HttpServletResponse.SC_BAD_REQUEST,
                     "This status transition is not allowed."
@@ -622,12 +653,29 @@ public class AgentComplaintController extends HttpServlet {
                         newStatus
                 );
 
-        writeResponse(
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "id",
+                updatedComplaint.getId()
+        );
+
+        data.put(
+                "status",
+                updatedComplaint.getStatus()
+        );
+
+        data.put(
+                "wasResolved",
+                updatedComplaint.isWasResolved()
+        );
+
+        ResponseUtil.sendSuccess(
                 response,
                 HttpServletResponse.SC_OK,
-                "Complaint status updated successfully. "
-                        + "New status: "
-                        + updatedComplaint.getStatus()
+                "Complaint status updated successfully.",
+                data
         );
     }
 
@@ -654,10 +702,8 @@ public class AgentComplaintController extends HttpServlet {
             return null;
         }
 
-        if (
-                activeAssignment.getAgent().getId()
-                        != agentId
-        ) {
+        if (activeAssignment.getAgent().getId()
+                != agentId) {
             return null;
         }
 
@@ -671,23 +717,30 @@ public class AgentComplaintController extends HttpServlet {
      * IN_PROGRESS -> RESOLVED
      *
      * The agent cannot directly close a complaint.
-     * CLOSED should be controlled by the admin or user-confirmation flow.
      */
     private boolean isAllowedStatusTransition(
             ComplaintStatus currentStatus,
             ComplaintStatus newStatus
     ) {
 
-        if (currentStatus == null || newStatus == null) {
+        if (currentStatus == null
+                || newStatus == null) {
+
             return false;
         }
 
-        if (currentStatus == ComplaintStatus.ASSIGNED) {
-            return newStatus == ComplaintStatus.IN_PROGRESS;
+        if (currentStatus
+                == ComplaintStatus.ASSIGNED) {
+
+            return newStatus
+                    == ComplaintStatus.IN_PROGRESS;
         }
 
-        if (currentStatus == ComplaintStatus.IN_PROGRESS) {
-            return newStatus == ComplaintStatus.RESOLVED;
+        if (currentStatus
+                == ComplaintStatus.IN_PROGRESS) {
+
+            return newStatus
+                    == ComplaintStatus.RESOLVED;
         }
 
         return false;
@@ -697,9 +750,11 @@ public class AgentComplaintController extends HttpServlet {
             HttpServletRequest request
     ) {
 
-        HttpSession session = request.getSession(false);
+        HttpSession session =
+                request.getSession(false);
 
         if (session == null) {
+
             throw new SecurityException(
                     "You must be logged in."
             );
@@ -711,6 +766,7 @@ public class AgentComplaintController extends HttpServlet {
                 );
 
         if (userIdAttribute == null) {
+
             throw new SecurityException(
                     "You must be logged in."
             );
@@ -725,11 +781,14 @@ public class AgentComplaintController extends HttpServlet {
         }
 
         if (userIdAttribute instanceof String) {
+
             try {
                 return Long.parseLong(
                         (String) userIdAttribute
                 );
+
             } catch (NumberFormatException e) {
+
                 throw new SecurityException(
                         "Invalid logged-in user id."
                 );
@@ -746,45 +805,279 @@ public class AgentComplaintController extends HttpServlet {
             String fieldName
     ) {
 
+        if (value == null
+                || value.isBlank()) {
+
+            throw new IllegalArgumentException(
+                    fieldName + " is required."
+            );
+        }
+
         try {
-            long id = Long.parseLong(value);
+
+            long id =
+                    Long.parseLong(value);
 
             if (id <= 0) {
+
                 throw new IllegalArgumentException(
-                        fieldName + " must be greater than zero."
+                        fieldName
+                                + " must be greater than zero."
                 );
             }
 
             return id;
 
         } catch (NumberFormatException e) {
+
             throw new IllegalArgumentException(
-                    fieldName + " must be a valid number."
+                    fieldName
+                            + " must be a valid number."
             );
         }
     }
 
-    private void writeResponse(
-            HttpServletResponse response,
-            int status,
-            String message
-    ) throws IOException {
+    /*
+     * Safe complaint summary for the agent's complaint list.
+     */
+    private Map<String, Object> toComplaintSummaryResponse(
+            Complaint complaint
+    ) {
 
-        response.setStatus(status);
-        response.setContentType("text/plain");
-        response.setCharacterEncoding("UTF-8");
-        response.getWriter().write(message);
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "id",
+                complaint.getId()
+        );
+
+        data.put(
+                "title",
+                complaint.getTitle()
+        );
+
+        data.put(
+                "status",
+                complaint.getStatus()
+        );
+
+        data.put(
+                "priority",
+                complaint.getPriority()
+        );
+
+        data.put(
+                "createdAt",
+                complaint.getCreatedAt()
+        );
+
+        return data;
     }
 
-    private void sendError(
-            HttpServletResponse response,
-            int status,
-            String message
-    ) throws IOException {
+    /*
+     * Full complaint response including updates.
+     */
+    private Map<String, Object> toComplaintDetailResponse(
+            Complaint complaint,
+            List<ComplaintUpdate> updates
+    ) {
 
-        response.setStatus(status);
-        response.setContentType("text/plain");
-        response.setCharacterEncoding("UTF-8");
-        response.getWriter().write(message);
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "id",
+                complaint.getId()
+        );
+
+        data.put(
+                "title",
+                complaint.getTitle()
+        );
+
+        data.put(
+                "description",
+                complaint.getDescription()
+        );
+
+        data.put(
+                "status",
+                complaint.getStatus()
+        );
+
+        data.put(
+                "priority",
+                complaint.getPriority()
+        );
+
+        data.put(
+                "wasResolved",
+                complaint.isWasResolved()
+        );
+
+        data.put(
+                "createdAt",
+                complaint.getCreatedAt()
+        );
+
+        data.put(
+                "updatedAt",
+                complaint.getUpdatedAt()
+        );
+
+        if (complaint.getUser() != null) {
+
+            Map<String, Object> userData =
+                    new LinkedHashMap<>();
+
+            userData.put(
+                    "id",
+                    complaint.getUser().getId()
+            );
+
+            userData.put(
+                    "name",
+                    complaint.getUser().getName()
+            );
+
+            userData.put(
+                    "email",
+                    complaint.getUser().getEmail()
+            );
+
+            userData.put(
+                    "role",
+                    complaint.getUser().getRole()
+            );
+
+            data.put(
+                    "user",
+                    userData
+            );
+
+        } else {
+
+            data.put(
+                    "user",
+                    null
+            );
+        }
+
+        if (complaint.getCategory() != null) {
+
+            Map<String, Object> categoryData =
+                    new LinkedHashMap<>();
+
+            categoryData.put(
+                    "id",
+                    complaint.getCategory().getId()
+            );
+
+            categoryData.put(
+                    "name",
+                    complaint.getCategory().getName()
+            );
+
+            categoryData.put(
+                    "description",
+                    complaint.getCategory().getDescription()
+            );
+
+            data.put(
+                    "category",
+                    categoryData
+            );
+
+        } else {
+
+            data.put(
+                    "category",
+                    null
+            );
+        }
+
+        List<Map<String, Object>> updateResponses =
+                new ArrayList<>();
+
+        if (updates != null) {
+
+            for (ComplaintUpdate update : updates) {
+
+                updateResponses.add(
+                        toUpdateResponse(update)
+                );
+            }
+        }
+
+        data.put(
+                "updates",
+                updateResponses
+        );
+
+        return data;
+    }
+
+    private Map<String, Object> toUpdateResponse(
+            ComplaintUpdate update
+    ) {
+
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "id",
+                update.getId()
+        );
+
+        data.put(
+                "message",
+                update.getMessage()
+        );
+
+        data.put(
+                "visibleToUser",
+                update.getVisibleToUser()
+        );
+
+        data.put(
+                "createdAt",
+                update.getCreatedAt()
+        );
+
+        if (update.getUpdatedBy() != null) {
+
+            Map<String, Object> updatedBy =
+                    new LinkedHashMap<>();
+
+            updatedBy.put(
+                    "id",
+                    update.getUpdatedBy().getId()
+            );
+
+            updatedBy.put(
+                    "name",
+                    update.getUpdatedBy().getName()
+            );
+
+            updatedBy.put(
+                    "role",
+                    update.getUpdatedBy().getRole()
+            );
+
+            data.put(
+                    "updatedBy",
+                    updatedBy
+            );
+
+        } else {
+
+            data.put(
+                    "updatedBy",
+                    null
+            );
+        }
+
+        return data;
     }
 }

@@ -4,6 +4,8 @@ import com.complainthub.entity.User;
 import com.complainthub.entity.enums.UserRole;
 import com.complainthub.service.UserService;
 import com.complainthub.service.UserServiceImpl;
+import com.complainthub.util.ResponseUtil;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -11,57 +13,97 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @WebServlet("/api/auth/register")
 public class RegistrationServlet extends HttpServlet {
-    private final UserService userService = new UserServiceImpl();
+
+    private final UserService userService =
+            new UserServiceImpl();
 
     @Override
     protected void doPost(
             HttpServletRequest req,
             HttpServletResponse res
     ) throws ServletException, IOException {
-        res.setContentType("text/plain");
-        res.setCharacterEncoding("UTF-8");
 
-        String name = req.getParameter("name");
-        String email = req.getParameter("email");
-        String password = req.getParameter("password");
+        String name =
+                req.getParameter("name");
+
+        String email =
+                req.getParameter("email");
+
+        String password =
+                req.getParameter("password");
 
         try {
             User user = new User();
+
             user.setName(name);
             user.setEmail(email);
             user.setPassword(password);
+
+            /*
+             * Public registration can only
+             * create normal USER accounts.
+             */
             user.setRole(UserRole.USER);
 
-            User createdUser = userService.createUser(user);
+            User createdUser =
+                    userService.createUser(user);
 
-            res.setStatus(
-                    HttpServletResponse.SC_CREATED
+            Map<String, Object> userData =
+                    new LinkedHashMap<>();
+
+            userData.put(
+                    "id",
+                    createdUser.getId()
             );
 
-            res.getWriter().println(
-                    "Registration successful."
+            userData.put(
+                    "name",
+                    createdUser.getName()
             );
 
-            res.getWriter().println(
-                    "User ID: " + createdUser.getId()
+            userData.put(
+                    "email",
+                    createdUser.getEmail()
             );
 
-            res.getWriter().println(
-                    "Role: " + createdUser.getRole()
+            userData.put(
+                    "role",
+                    createdUser.getRole()
+            );
+
+            ResponseUtil.sendSuccess(
+                    res,
+                    HttpServletResponse.SC_CREATED,
+                    "Registration successful.",
+                    userData
             );
 
         } catch (IllegalArgumentException e) {
-            res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            res.getWriter().println(
+
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_BAD_REQUEST,
                     "Registration failed: "
                             + e.getMessage()
             );
+
         } catch (Exception e) {
-            res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            res.getWriter().println("Unable to register user.");
+
+            getServletContext().log(
+                    "Unable to register user.",
+                    e
+            );
+
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Unable to register user."
+            );
         }
     }
 }

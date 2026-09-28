@@ -1,5 +1,7 @@
 package com.complainthub.controller;
 
+import com.complainthub.util.ResponseUtil;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -18,13 +20,18 @@ public class LogoutServlet extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
-        HttpSession session = request.getSession(false);
+        HttpSession session =
+                request.getSession(false);
 
         if (session != null) {
             session.invalidate();
         }
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().write("Logout successful.");
+        ResponseUtil.sendSuccess(
+                response,
+                HttpServletResponse.SC_OK,
+                "Logout successful.",
+                null
+        );
     }
 }

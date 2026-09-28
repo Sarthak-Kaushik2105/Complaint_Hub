@@ -4,6 +4,7 @@ import com.complainthub.entity.UserProfilePhoto;
 import com.complainthub.service.UserProfilePhotoService;
 import com.complainthub.service.UserProfilePhotoServiceImpl;
 import com.complainthub.util.AuthorizationUtil;
+import com.complainthub.util.ResponseUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -15,6 +16,8 @@ import jakarta.servlet.http.Part;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @WebServlet("/api/users/*")
 @MultipartConfig(
@@ -32,11 +35,9 @@ public class UserProfilePhotoController extends HttpServlet {
             HttpServletResponse res
     ) throws ServletException, IOException {
 
-        res.setContentType("text/plain");
-        res.setCharacterEncoding("UTF-8");
-
         try {
-            String pathInfo = req.getPathInfo();
+            String pathInfo =
+                    req.getPathInfo();
 
             long userId =
                     parseUserId(pathInfo);
@@ -46,7 +47,8 @@ public class UserProfilePhotoController extends HttpServlet {
                     userId
             );
 
-            Part filePart = req.getPart("file");
+            Part filePart =
+                    req.getPart("file");
 
             if (filePart == null
                     || filePart.getSize() <= 0) {
@@ -75,7 +77,8 @@ public class UserProfilePhotoController extends HttpServlet {
             try (InputStream inputStream =
                          filePart.getInputStream()) {
 
-                fileData = inputStream.readAllBytes();
+                fileData =
+                        inputStream.readAllBytes();
             }
 
             UserProfilePhoto profilePhoto =
@@ -86,66 +89,42 @@ public class UserProfilePhotoController extends HttpServlet {
                             contentType
                     );
 
-            res.setStatus(
-                    HttpServletResponse.SC_CREATED
-            );
-
-            res.getWriter().println(
-                    "Profile photo uploaded successfully."
-            );
-
-            res.getWriter().println(
-                    "Profile Photo ID: "
-                            + profilePhoto.getId()
-            );
-
-            res.getWriter().println(
-                    "User ID: " + userId
-            );
-
-            res.getWriter().println(
-                    "File Name: "
-                            + profilePhoto.getFileName()
-            );
-
-            res.getWriter().println(
-                    "Content Type: "
-                            + profilePhoto.getContentType()
-            );
-
-            res.getWriter().println(
-                    "File Size: "
-                            + profilePhoto.getFileSize()
+            ResponseUtil.sendSuccess(
+                    res,
+                    HttpServletResponse.SC_CREATED,
+                    "Profile photo uploaded successfully.",
+                    toProfilePhotoResponse(
+                            profilePhoto
+                    )
             );
 
         } catch (SecurityException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_FORBIDDEN
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_FORBIDDEN,
                     "Access denied: " + e.getMessage()
             );
 
         } catch (IllegalArgumentException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_BAD_REQUEST
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_BAD_REQUEST,
                     "Profile photo upload failed: "
                             + e.getMessage()
             );
 
         } catch (Exception e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            getServletContext().log(
+                    "Unable to upload profile photo.",
+                    e
             );
 
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Unable to upload profile photo."
             );
         }
@@ -157,11 +136,9 @@ public class UserProfilePhotoController extends HttpServlet {
             HttpServletResponse res
     ) throws ServletException, IOException {
 
-        res.setContentType("text/plain");
-        res.setCharacterEncoding("UTF-8");
-
         try {
-            String pathInfo = req.getPathInfo();
+            String pathInfo =
+                    req.getPathInfo();
 
             long userId =
                     parseUserId(pathInfo);
@@ -178,92 +155,50 @@ public class UserProfilePhotoController extends HttpServlet {
 
             if (profilePhoto == null) {
 
-                res.setStatus(
-                        HttpServletResponse.SC_NOT_FOUND
-                );
-
-                res.getWriter().println(
+                ResponseUtil.sendError(
+                        res,
+                        HttpServletResponse.SC_NOT_FOUND,
                         "Profile photo not found."
                 );
 
                 return;
             }
 
-            res.setStatus(
-                    HttpServletResponse.SC_OK
-            );
-
-            res.getWriter().println(
-                    "Profile Photo ID: "
-                            + profilePhoto.getId()
-            );
-
-            res.getWriter().println(
-                    "User ID: " + userId
-            );
-
-            res.getWriter().println(
-                    "File Name: "
-                            + profilePhoto.getFileName()
-            );
-
-            res.getWriter().println(
-                    "Stored File Name: "
-                            + profilePhoto.getStoredFileName()
-            );
-
-            res.getWriter().println(
-                    "File Path: "
-                            + profilePhoto.getFilePath()
-            );
-
-            res.getWriter().println(
-                    "Content Type: "
-                            + profilePhoto.getContentType()
-            );
-
-            res.getWriter().println(
-                    "File Size: "
-                            + profilePhoto.getFileSize()
-            );
-
-            res.getWriter().println(
-                    "Created At: "
-                            + profilePhoto.getCreatedAt()
-            );
-
-            res.getWriter().println(
-                    "Updated At: "
-                            + profilePhoto.getUpdatedAt()
+            ResponseUtil.sendSuccess(
+                    res,
+                    HttpServletResponse.SC_OK,
+                    "Profile photo retrieved successfully.",
+                    toProfilePhotoResponse(
+                            profilePhoto
+                    )
             );
 
         } catch (SecurityException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_FORBIDDEN
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_FORBIDDEN,
                     "Access denied: " + e.getMessage()
             );
 
         } catch (IllegalArgumentException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_BAD_REQUEST
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_BAD_REQUEST,
                     "Invalid request: " + e.getMessage()
             );
 
         } catch (Exception e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            getServletContext().log(
+                    "Unable to retrieve profile photo.",
+                    e
             );
 
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Unable to retrieve profile photo."
             );
         }
@@ -275,11 +210,9 @@ public class UserProfilePhotoController extends HttpServlet {
             HttpServletResponse res
     ) throws ServletException, IOException {
 
-        res.setContentType("text/plain");
-        res.setCharacterEncoding("UTF-8");
-
         try {
-            String pathInfo = req.getPathInfo();
+            String pathInfo =
+                    req.getPathInfo();
 
             long userId =
                     parseUserId(pathInfo);
@@ -296,11 +229,9 @@ public class UserProfilePhotoController extends HttpServlet {
 
             if (profilePhoto == null) {
 
-                res.setStatus(
-                        HttpServletResponse.SC_NOT_FOUND
-                );
-
-                res.getWriter().println(
+                ResponseUtil.sendError(
+                        res,
+                        HttpServletResponse.SC_NOT_FOUND,
                         "Profile photo not found."
                 );
 
@@ -314,63 +245,125 @@ public class UserProfilePhotoController extends HttpServlet {
 
             if (!deleted) {
 
-                res.setStatus(
-                        HttpServletResponse.SC_NOT_FOUND
-                );
-
-                res.getWriter().println(
+                ResponseUtil.sendError(
+                        res,
+                        HttpServletResponse.SC_NOT_FOUND,
                         "Profile photo not found."
                 );
 
                 return;
             }
 
-            res.setStatus(
-                    HttpServletResponse.SC_OK
+            Map<String, Object> data =
+                    new LinkedHashMap<>();
+
+            data.put(
+                    "userId",
+                    userId
             );
 
-            res.getWriter().println(
-                    "Profile photo deleted successfully."
+            data.put(
+                    "profilePhotoId",
+                    profilePhoto.getId()
             );
 
-            res.getWriter().println(
-                    "User ID: " + userId
+            ResponseUtil.sendSuccess(
+                    res,
+                    HttpServletResponse.SC_OK,
+                    "Profile photo deleted successfully.",
+                    data
             );
 
         } catch (SecurityException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_FORBIDDEN
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_FORBIDDEN,
                     "Access denied: " + e.getMessage()
             );
 
         } catch (IllegalArgumentException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_BAD_REQUEST
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_BAD_REQUEST,
                     "Profile photo deletion failed: "
                             + e.getMessage()
             );
 
         } catch (Exception e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            getServletContext().log(
+                    "Unable to delete profile photo.",
+                    e
             );
 
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Unable to delete profile photo."
             );
         }
     }
 
-    private long parseUserId(String pathInfo) {
+    private Map<String, Object> toProfilePhotoResponse(
+            UserProfilePhoto profilePhoto
+    ) {
+
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "id",
+                profilePhoto.getId()
+        );
+
+        data.put(
+                "userId",
+                profilePhoto.getUser()
+        );
+
+        data.put(
+                "fileName",
+                profilePhoto.getFileName()
+        );
+
+        data.put(
+                "storedFileName",
+                profilePhoto.getStoredFileName()
+        );
+
+        data.put(
+                "filePath",
+                profilePhoto.getFilePath()
+        );
+
+        data.put(
+                "contentType",
+                profilePhoto.getContentType()
+        );
+
+        data.put(
+                "fileSize",
+                profilePhoto.getFileSize()
+        );
+
+        data.put(
+                "createdAt",
+                profilePhoto.getCreatedAt()
+        );
+
+        data.put(
+                "updatedAt",
+                profilePhoto.getUpdatedAt()
+        );
+
+        return data;
+    }
+
+    private long parseUserId(
+            String pathInfo
+    ) {
 
         if (pathInfo == null
                 || pathInfo.equals("/")
@@ -381,14 +374,17 @@ public class UserProfilePhotoController extends HttpServlet {
             );
         }
 
-        String value = pathInfo.substring(1);
+        String value =
+                pathInfo.substring(1);
 
         /*
          * Expected:
          *
          * /{userId}/profile-photo
          */
-        if (!value.endsWith("/profile-photo")) {
+        if (!value.endsWith(
+                "/profile-photo"
+        )) {
 
             throw new IllegalArgumentException(
                     "Invalid profile photo endpoint."
@@ -412,7 +408,17 @@ public class UserProfilePhotoController extends HttpServlet {
 
         try {
 
-            return Long.parseLong(userIdValue);
+            long userId =
+                    Long.parseLong(userIdValue);
+
+            if (userId <= 0) {
+
+                throw new IllegalArgumentException(
+                        "User ID must be greater than zero."
+                );
+            }
+
+            return userId;
 
         } catch (NumberFormatException e) {
 

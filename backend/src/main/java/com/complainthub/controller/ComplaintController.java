@@ -8,6 +8,7 @@ import com.complainthub.service.ComplaintServiceImpl;
 import com.complainthub.util.AuthenticationConstants;
 import com.complainthub.util.AuthorizationException;
 import com.complainthub.util.AuthorizationUtil;
+import com.complainthub.util.ResponseUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,7 +18,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/api/complaints/*")
 public class ComplaintController extends HttpServlet {
@@ -30,9 +34,6 @@ public class ComplaintController extends HttpServlet {
             HttpServletRequest request,
             HttpServletResponse response
     ) throws ServletException, IOException {
-
-        response.setContentType("text/plain");
-        response.setCharacterEncoding("UTF-8");
 
         try {
             Long authenticatedUserId =
@@ -67,30 +68,28 @@ public class ComplaintController extends HttpServlet {
             Complaint createdComplaint =
                     complaintService.createComplaint(complaint);
 
-            response.setStatus(
-                    HttpServletResponse.SC_CREATED
+            ResponseUtil.sendSuccess(
+                    response,
+                    HttpServletResponse.SC_CREATED,
+                    "Complaint created successfully.",
+                    toComplaintResponse(createdComplaint)
             );
-
-            response.getWriter().println(
-                    "Complaint created successfully."
-            );
-
-            printComplaint(createdComplaint, response);
 
         } catch (IllegalArgumentException exception) {
-            response.setStatus(
-                    HttpServletResponse.SC_BAD_REQUEST
-            );
 
-            response.getWriter().println(
+            ResponseUtil.sendError(
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
                     "Validation Error: "
                             + exception.getMessage()
             );
 
         } catch (Exception exception) {
+
             exception.printStackTrace();
 
-            response.sendError(
+            ResponseUtil.sendError(
+                    response,
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Unable to create complaint."
             );
@@ -103,9 +102,6 @@ public class ComplaintController extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
-        response.setContentType("text/plain");
-        response.setCharacterEncoding("UTF-8");
-
         try {
             String pathInfo =
                     request.getPathInfo();
@@ -114,9 +110,10 @@ public class ComplaintController extends HttpServlet {
                     || pathInfo.isBlank()
                     || pathInfo.equals("/")) {
 
-                response.sendError(
+                ResponseUtil.sendError(
+                        response,
                         HttpServletResponse.SC_BAD_REQUEST,
-                        "Complaint ID or /my path is required"
+                        "Complaint ID or /my path is required."
                 );
 
                 return;
@@ -136,9 +133,11 @@ public class ComplaintController extends HttpServlet {
                     );
 
             if (complaint == null) {
-                response.sendError(
+
+                ResponseUtil.sendError(
+                        response,
                         HttpServletResponse.SC_NOT_FOUND,
-                        "Complaint not found"
+                        "Complaint not found."
                 );
 
                 return;
@@ -149,30 +148,37 @@ public class ComplaintController extends HttpServlet {
                     complaint.getUser().getId()
             );
 
-            response.setStatus(
-                    HttpServletResponse.SC_OK
+            ResponseUtil.sendSuccess(
+                    response,
+                    HttpServletResponse.SC_OK,
+                    "Complaint retrieved successfully.",
+                    toComplaintResponse(complaint)
             );
 
-            printComplaint(complaint, response);
-
         } catch (AuthorizationException exception) {
-            response.sendError(
+
+            ResponseUtil.sendError(
+                    response,
                     HttpServletResponse.SC_FORBIDDEN,
                     exception.getMessage()
             );
 
         } catch (IllegalArgumentException exception) {
-            response.sendError(
+
+            ResponseUtil.sendError(
+                    response,
                     HttpServletResponse.SC_BAD_REQUEST,
                     exception.getMessage()
             );
 
         } catch (Exception exception) {
+
             exception.printStackTrace();
 
-            response.sendError(
+            ResponseUtil.sendError(
+                    response,
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "An unexpected error occurred"
+                    "An unexpected error occurred."
             );
         }
     }
@@ -183,40 +189,68 @@ public class ComplaintController extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
-        response.setContentType("text/plain");
-        response.setCharacterEncoding("UTF-8");
-
         try {
-            long authenticatedUserId = getAuthenticatedUserId(request);
+            long authenticatedUserId =
+                    getAuthenticatedUserId(request);
 
-            String pathInfo = request.getPathInfo();
+            String pathInfo =
+                    request.getPathInfo();
 
-            if (pathInfo == null || pathInfo.equals("/")) {
-                throw new IllegalArgumentException("Complaint ID is required.");
+            if (pathInfo == null
+                    || pathInfo.equals("/")) {
+
+                throw new IllegalArgumentException(
+                        "Complaint ID is required."
+                );
             }
 
-            String[] pathParts = pathInfo.split("/");
+            String[] pathParts =
+                    pathInfo.split("/");
+
             if (pathParts.length != 3) {
-                throw new IllegalArgumentException("Invalid complaint status URL.");
+
+                throw new IllegalArgumentException(
+                        "Invalid complaint status URL."
+                );
             }
 
-            long complaintId = parseId(pathParts[1], "Complaint ID");
+            long complaintId =
+                    parseId(
+                            pathParts[1],
+                            "Complaint ID"
+                    );
 
-            String action = pathParts[2].toLowerCase();
+            String action =
+                    pathParts[2].toLowerCase();
 
+            /*
+             * -----------------------------------------
+             * REOPEN COMPLAINT
+             * -----------------------------------------
+             */
             if (action.equals("reopen")) {
-                Complaint reopenedComplaint =
-                        complaintService.reopenComplaint(complaintId, authenticatedUserId);
 
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().println("Complaint reopened successfully.");
-                response.getWriter().println("Complaint ID: " + reopenedComplaint.getId());
-                response.getWriter().println("Status: " + reopenedComplaint.getStatus());
-                response.getWriter().println("Was Resolved: " + reopenedComplaint.isWasResolved());
+                Complaint reopenedComplaint =
+                        complaintService.reopenComplaint(
+                                complaintId,
+                                authenticatedUserId
+                        );
+
+                ResponseUtil.sendSuccess(
+                        response,
+                        HttpServletResponse.SC_OK,
+                        "Complaint reopened successfully.",
+                        toComplaintResponse(reopenedComplaint)
+                );
 
                 return;
             }
 
+            /*
+             * -----------------------------------------
+             * CLOSE COMPLAINT
+             * -----------------------------------------
+             */
             if (action.equals("close")) {
 
                 boolean closed =
@@ -226,32 +260,27 @@ public class ComplaintController extends HttpServlet {
                         );
 
                 if (!closed) {
-                    response.setStatus(
-                            HttpServletResponse.SC_NOT_FOUND
-                    );
 
-                    response.getWriter().println(
+                    ResponseUtil.sendError(
+                            response,
+                            HttpServletResponse.SC_NOT_FOUND,
                             "Complaint could not be closed."
                     );
 
                     return;
                 }
 
-                response.setStatus(
-                        HttpServletResponse.SC_OK
-                );
+                Map<String, Object> data =
+                        new LinkedHashMap<>();
 
-                response.getWriter().println(
-                        "Complaint closed successfully."
-                );
+                data.put("id", complaintId);
+                data.put("status", "CLOSED");
 
-                response.getWriter().println(
-                        "Complaint ID: "
-                                + complaintId
-                );
-
-                response.getWriter().println(
-                        "Status: CLOSED"
+                ResponseUtil.sendSuccess(
+                        response,
+                        HttpServletResponse.SC_OK,
+                        "Complaint closed successfully.",
+                        data
                 );
 
                 return;
@@ -263,22 +292,20 @@ public class ComplaintController extends HttpServlet {
 
         } catch (IllegalArgumentException exception) {
 
-            response.setStatus(
-                    HttpServletResponse.SC_BAD_REQUEST
-            );
-
-            response.getWriter().println(
+            ResponseUtil.sendError(
+                    response,
+                    HttpServletResponse.SC_BAD_REQUEST,
                     "Validation Error: "
                             + exception.getMessage()
             );
 
         } catch (Exception exception) {
 
-            response.setStatus(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR
-            );
+            exception.printStackTrace();
 
-            response.getWriter().println(
+            ResponseUtil.sendError(
+                    response,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Unable to update complaint status."
             );
         }
@@ -297,26 +324,37 @@ public class ComplaintController extends HttpServlet {
                         authenticatedUserId
                 );
 
-        response.setStatus(
-                HttpServletResponse.SC_OK
-        );
+        List<Map<String, Object>> complaintResponses =
+                new ArrayList<>();
 
-        if (complaints == null || complaints.isEmpty()) {
-            response.getWriter().println(
-                    "You have not created any complaints yet."
-            );
+        if (complaints != null) {
 
-            return;
+            for (Complaint complaint : complaints) {
+                complaintResponses.add(
+                        toComplaintResponse(complaint)
+                );
+            }
         }
 
-        response.getWriter().println(
-                "Total complaints: "
-                        + complaints.size()
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "total",
+                complaintResponses.size()
         );
 
-        for (Complaint complaint : complaints) {
-            printComplaint(complaint, response);
-        }
+        data.put(
+                "complaints",
+                complaintResponses
+        );
+
+        ResponseUtil.sendSuccess(
+                response,
+                HttpServletResponse.SC_OK,
+                "Complaints retrieved successfully.",
+                data
+        );
     }
 
     private Long getAuthenticatedUserId(
@@ -327,6 +365,7 @@ public class ComplaintController extends HttpServlet {
                 request.getSession(false);
 
         if (session == null) {
+
             throw new IllegalArgumentException(
                     "Authenticated session is required."
             );
@@ -338,16 +377,21 @@ public class ComplaintController extends HttpServlet {
                 );
 
         if (userId == null) {
+
             throw new IllegalArgumentException(
                     "Authenticated User ID is missing."
             );
         }
 
         try {
+
             long parsedUserId =
-                    Long.parseLong(userId.toString());
+                    Long.parseLong(
+                            userId.toString()
+                    );
 
             if (parsedUserId <= 0) {
+
                 throw new IllegalArgumentException(
                         "Authenticated User ID is invalid."
                 );
@@ -356,6 +400,7 @@ public class ComplaintController extends HttpServlet {
             return parsedUserId;
 
         } catch (NumberFormatException exception) {
+
             throw new IllegalArgumentException(
                     "Authenticated User ID is invalid."
             );
@@ -367,16 +412,21 @@ public class ComplaintController extends HttpServlet {
             String fieldName
     ) {
 
-        if (value == null || value.isBlank()) {
+        if (value == null
+                || value.isBlank()) {
+
             throw new IllegalArgumentException(
-                    fieldName + " is required"
+                    fieldName + " is required."
             );
         }
 
         try {
-            long id = Long.parseLong(value);
+
+            long id =
+                    Long.parseLong(value);
 
             if (id <= 0) {
+
                 throw new IllegalArgumentException(
                         fieldName
                                 + " must be greater than zero."
@@ -386,8 +436,10 @@ public class ComplaintController extends HttpServlet {
             return id;
 
         } catch (NumberFormatException exception) {
+
             throw new IllegalArgumentException(
-                    fieldName + " must be a valid number."
+                    fieldName
+                            + " must be a valid number."
             );
         }
     }
@@ -412,6 +464,7 @@ public class ComplaintController extends HttpServlet {
                 pathInfo.substring(1);
 
         if (idValue.contains("/")) {
+
             throw new IllegalArgumentException(
                     "Invalid complaint URL."
             );
@@ -423,43 +476,110 @@ public class ComplaintController extends HttpServlet {
         );
     }
 
-    private void printComplaint(
-            Complaint complaint,
-            HttpServletResponse response
-    ) throws IOException {
+    private Map<String, Object> toComplaintResponse(
+            Complaint complaint
+    ) {
 
-        response.getWriter().println(
-                "--------------------------------------"
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "id",
+                complaint.getId()
         );
 
-        response.getWriter().println(
-                "Complaint ID: "
-                        + complaint.getId()
+        data.put(
+                "title",
+                complaint.getTitle()
         );
 
-        response.getWriter().println(
-                "Title: "
-                        + complaint.getTitle()
+        data.put(
+                "description",
+                complaint.getDescription()
         );
 
-        response.getWriter().println(
-                "Status: "
-                        + complaint.getStatus()
+        data.put(
+                "status",
+                complaint.getStatus()
         );
 
-        response.getWriter().println(
-                "Priority: "
-                        + complaint.getPriority()
+        data.put(
+                "priority",
+                complaint.getPriority()
         );
 
-        response.getWriter().println(
-                "User ID: "
-                        + complaint.getUser().getId()
+        data.put(
+                "wasResolved",
+                complaint.isWasResolved()
         );
 
-        response.getWriter().println(
-                "Category ID: "
-                        + complaint.getCategory().getId()
+        data.put(
+                "createdAt",
+                complaint.getCreatedAt()
         );
+
+        data.put(
+                "updatedAt",
+                complaint.getUpdatedAt()
+        );
+
+        if (complaint.getUser() != null) {
+
+            Map<String, Object> user =
+                    new LinkedHashMap<>();
+
+            user.put(
+                    "id",
+                    complaint.getUser().getId()
+            );
+
+            user.put(
+                    "name",
+                    complaint.getUser().getName()
+            );
+
+            user.put(
+                    "email",
+                    complaint.getUser().getEmail()
+            );
+
+            user.put(
+                    "role",
+                    complaint.getUser().getRole()
+            );
+
+            data.put(
+                    "user",
+                    user
+            );
+        }
+
+        if (complaint.getCategory() != null) {
+
+            Map<String, Object> category =
+                    new LinkedHashMap<>();
+
+            category.put(
+                    "id",
+                    complaint.getCategory().getId()
+            );
+
+            category.put(
+                    "name",
+                    complaint.getCategory().getName()
+            );
+
+            category.put(
+                    "description",
+                    complaint.getCategory().getDescription()
+            );
+
+            data.put(
+                    "category",
+                    category
+            );
+        }
+
+        return data;
     }
 }

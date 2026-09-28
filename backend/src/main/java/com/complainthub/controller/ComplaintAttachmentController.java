@@ -7,6 +7,7 @@ import com.complainthub.service.ComplaintAttachmentServiceImpl;
 import com.complainthub.service.ComplaintService;
 import com.complainthub.service.ComplaintServiceImpl;
 import com.complainthub.util.AuthorizationUtil;
+import com.complainthub.util.ResponseUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -18,7 +19,10 @@ import jakarta.servlet.http.Part;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/api/attachments/*")
 @MultipartConfig(
@@ -39,21 +43,28 @@ public class ComplaintAttachmentController extends HttpServlet {
             HttpServletResponse res
     ) throws ServletException, IOException {
 
-        res.setContentType("text/plain");
-        res.setCharacterEncoding("UTF-8");
-
         try {
-            String pathInfo = req.getPathInfo();
+            String pathInfo =
+                    req.getPathInfo();
 
             long complaintId =
-                    parseComplaintIdForUpload(pathInfo);
+                    parseComplaintIdForUpload(
+                            pathInfo
+                    );
 
             Complaint complaint =
-                    complaintService.getComplaintById(complaintId);
+                    complaintService.getComplaintById(
+                            complaintId
+                    );
 
             if (complaint == null) {
-                res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                res.getWriter().println("Complaint not found.");
+
+                ResponseUtil.sendError(
+                        res,
+                        HttpServletResponse.SC_NOT_FOUND,
+                        "Complaint not found."
+                );
+
                 return;
             }
 
@@ -62,9 +73,12 @@ public class ComplaintAttachmentController extends HttpServlet {
                     complaint.getUser().getId()
             );
 
-            Part filePart = req.getPart("file");
+            Part filePart =
+                    req.getPart("file");
 
-            if (filePart == null || filePart.getSize() <= 0) {
+            if (filePart == null
+                    || filePart.getSize() <= 0) {
+
                 throw new IllegalArgumentException(
                         "File is required."
                 );
@@ -76,7 +90,9 @@ public class ComplaintAttachmentController extends HttpServlet {
             String contentType =
                     filePart.getContentType();
 
-            if (fileName == null || fileName.isBlank()) {
+            if (fileName == null
+                    || fileName.isBlank()) {
+
                 throw new IllegalArgumentException(
                         "File name is required."
                 );
@@ -87,7 +103,8 @@ public class ComplaintAttachmentController extends HttpServlet {
             try (InputStream inputStream =
                          filePart.getInputStream()) {
 
-                fileData = inputStream.readAllBytes();
+                fileData =
+                        inputStream.readAllBytes();
             }
 
             ComplaintAttachment attachment =
@@ -98,57 +115,42 @@ public class ComplaintAttachmentController extends HttpServlet {
                             contentType
                     );
 
-            res.setStatus(
-                    HttpServletResponse.SC_CREATED
-            );
-
-            res.getWriter().println(
-                    "Attachment uploaded successfully."
-            );
-            res.getWriter().println(
-                    "Attachment ID: " + attachment.getId()
-            );
-            res.getWriter().println(
-                    "Complaint ID: " + complaintId
-            );
-            res.getWriter().println(
-                    "File Name: " + attachment.getFileName()
-            );
-            res.getWriter().println(
-                    "Content Type: " + attachment.getContentType()
-            );
-            res.getWriter().println(
-                    "File Size: " + attachment.getFileSize()
+            ResponseUtil.sendSuccess(
+                    res,
+                    HttpServletResponse.SC_CREATED,
+                    "Attachment uploaded successfully.",
+                    toAttachmentResponse(
+                            attachment
+                    )
             );
 
         } catch (SecurityException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_FORBIDDEN
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_FORBIDDEN,
                     "Access denied: " + e.getMessage()
             );
 
         } catch (IllegalArgumentException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_BAD_REQUEST
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_BAD_REQUEST,
                     "Attachment upload failed: "
                             + e.getMessage()
             );
 
         } catch (Exception e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            getServletContext().log(
+                    "Unable to upload attachment.",
+                    e
             );
 
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Unable to upload attachment."
             );
         }
@@ -160,11 +162,9 @@ public class ComplaintAttachmentController extends HttpServlet {
             HttpServletResponse res
     ) throws ServletException, IOException {
 
-        res.setContentType("text/plain");
-        res.setCharacterEncoding("UTF-8");
-
         try {
-            String pathInfo = req.getPathInfo();
+            String pathInfo =
+                    req.getPathInfo();
 
             /*
              * GET /api/attachments/complaint/{complaintId}
@@ -175,7 +175,9 @@ public class ComplaintAttachmentController extends HttpServlet {
                     && pathInfo.startsWith("/complaint/")) {
 
                 long complaintId =
-                        parseComplaintIdForList(pathInfo);
+                        parseComplaintIdForList(
+                                pathInfo
+                        );
 
                 Complaint complaint =
                         complaintService.getComplaintById(
@@ -183,11 +185,10 @@ public class ComplaintAttachmentController extends HttpServlet {
                         );
 
                 if (complaint == null) {
-                    res.setStatus(
-                            HttpServletResponse.SC_NOT_FOUND
-                    );
 
-                    res.getWriter().println(
+                    ResponseUtil.sendError(
+                            res,
+                            HttpServletResponse.SC_NOT_FOUND,
                             "Complaint not found."
                     );
 
@@ -200,51 +201,15 @@ public class ComplaintAttachmentController extends HttpServlet {
                 );
 
                 List<ComplaintAttachment> attachments =
-                        attachmentService.getAttachmentsByComplaint(
-                                complaintId
-                        );
+                        attachmentService
+                                .getAttachmentsByComplaint(
+                                        complaintId
+                                );
 
-                res.setStatus(
-                        HttpServletResponse.SC_OK
+                writeAttachmentList(
+                        attachments,
+                        res
                 );
-
-                if (attachments.isEmpty()) {
-                    res.getWriter().println(
-                            "No attachments found for this complaint."
-                    );
-
-                    return;
-                }
-
-                for (ComplaintAttachment attachment : attachments) {
-
-                    res.getWriter().println(
-                            "Attachment ID: "
-                                    + attachment.getId()
-                    );
-
-                    res.getWriter().println(
-                            "File Name: "
-                                    + attachment.getFileName()
-                    );
-
-                    res.getWriter().println(
-                            "Content Type: "
-                                    + attachment.getContentType()
-                    );
-
-                    res.getWriter().println(
-                            "File Size: "
-                                    + attachment.getFileSize()
-                    );
-
-                    res.getWriter().println(
-                            "Created At: "
-                                    + attachment.getCreatedAt()
-                    );
-
-                    res.getWriter().println();
-                }
 
                 return;
             }
@@ -255,7 +220,9 @@ public class ComplaintAttachmentController extends HttpServlet {
              * Returns metadata for one attachment.
              */
             long attachmentId =
-                    parseAttachmentId(pathInfo);
+                    parseAttachmentId(
+                            pathInfo
+                    );
 
             ComplaintAttachment attachment =
                     attachmentService.getAttachmentById(
@@ -263,11 +230,10 @@ public class ComplaintAttachmentController extends HttpServlet {
                     );
 
             if (attachment == null) {
-                res.setStatus(
-                        HttpServletResponse.SC_NOT_FOUND
-                );
 
-                res.getWriter().println(
+                ResponseUtil.sendError(
+                        res,
+                        HttpServletResponse.SC_NOT_FOUND,
                         "Attachment not found."
                 );
 
@@ -280,11 +246,9 @@ public class ComplaintAttachmentController extends HttpServlet {
             if (complaint == null
                     || complaint.getUser() == null) {
 
-                res.setStatus(
-                        HttpServletResponse.SC_NOT_FOUND
-                );
-
-                res.getWriter().println(
+                ResponseUtil.sendError(
+                        res,
+                        HttpServletResponse.SC_NOT_FOUND,
                         "Attachment complaint information not found."
                 );
 
@@ -296,71 +260,41 @@ public class ComplaintAttachmentController extends HttpServlet {
                     complaint.getUser().getId()
             );
 
-            res.setStatus(
-                    HttpServletResponse.SC_OK
-            );
-
-            res.getWriter().println(
-                    "Attachment ID: " + attachment.getId()
-            );
-
-            res.getWriter().println(
-                    "Complaint ID: " + complaint.getId()
-            );
-
-            res.getWriter().println(
-                    "File Name: " + attachment.getFileName()
-            );
-
-            res.getWriter().println(
-                    "Stored File Name: "
-                            + attachment.getStoredFileName()
-            );
-
-            res.getWriter().println(
-                    "File Path: " + attachment.getFilePath()
-            );
-
-            res.getWriter().println(
-                    "Content Type: "
-                            + attachment.getContentType()
-            );
-
-            res.getWriter().println(
-                    "File Size: " + attachment.getFileSize()
-            );
-
-            res.getWriter().println(
-                    "Created At: " + attachment.getCreatedAt()
+            ResponseUtil.sendSuccess(
+                    res,
+                    HttpServletResponse.SC_OK,
+                    "Attachment retrieved successfully.",
+                    toAttachmentResponse(
+                            attachment
+                    )
             );
 
         } catch (SecurityException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_FORBIDDEN
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_FORBIDDEN,
                     "Access denied: " + e.getMessage()
             );
 
         } catch (IllegalArgumentException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_BAD_REQUEST
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_BAD_REQUEST,
                     "Invalid request: " + e.getMessage()
             );
 
         } catch (Exception e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            getServletContext().log(
+                    "Unable to retrieve attachment.",
+                    e
             );
 
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Unable to retrieve attachment."
             );
         }
@@ -372,14 +306,14 @@ public class ComplaintAttachmentController extends HttpServlet {
             HttpServletResponse res
     ) throws ServletException, IOException {
 
-        res.setContentType("text/plain");
-        res.setCharacterEncoding("UTF-8");
-
         try {
-            String pathInfo = req.getPathInfo();
+            String pathInfo =
+                    req.getPathInfo();
 
             long attachmentId =
-                    parseAttachmentId(pathInfo);
+                    parseAttachmentId(
+                            pathInfo
+                    );
 
             ComplaintAttachment attachment =
                     attachmentService.getAttachmentById(
@@ -387,11 +321,10 @@ public class ComplaintAttachmentController extends HttpServlet {
                     );
 
             if (attachment == null) {
-                res.setStatus(
-                        HttpServletResponse.SC_NOT_FOUND
-                );
 
-                res.getWriter().println(
+                ResponseUtil.sendError(
+                        res,
+                        HttpServletResponse.SC_NOT_FOUND,
                         "Attachment not found."
                 );
 
@@ -404,11 +337,9 @@ public class ComplaintAttachmentController extends HttpServlet {
             if (complaint == null
                     || complaint.getUser() == null) {
 
-                res.setStatus(
-                        HttpServletResponse.SC_NOT_FOUND
-                );
-
-                res.getWriter().println(
+                ResponseUtil.sendError(
+                        res,
+                        HttpServletResponse.SC_NOT_FOUND,
                         "Attachment complaint information not found."
                 );
 
@@ -426,67 +357,179 @@ public class ComplaintAttachmentController extends HttpServlet {
                     );
 
             if (!deleted) {
-                res.setStatus(
-                        HttpServletResponse.SC_NOT_FOUND
-                );
 
-                res.getWriter().println(
+                ResponseUtil.sendError(
+                        res,
+                        HttpServletResponse.SC_NOT_FOUND,
                         "Attachment not found."
                 );
 
                 return;
             }
 
-            res.setStatus(
-                    HttpServletResponse.SC_OK
+            Map<String, Object> data =
+                    new LinkedHashMap<>();
+
+            data.put(
+                    "attachmentId",
+                    attachmentId
             );
 
-            res.getWriter().println(
-                    "Attachment deleted successfully."
-            );
-
-            res.getWriter().println(
-                    "Attachment ID: " + attachmentId
+            ResponseUtil.sendSuccess(
+                    res,
+                    HttpServletResponse.SC_OK,
+                    "Attachment deleted successfully.",
+                    data
             );
 
         } catch (SecurityException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_FORBIDDEN
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_FORBIDDEN,
                     "Access denied: " + e.getMessage()
             );
 
         } catch (IllegalArgumentException e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_BAD_REQUEST
-            );
-
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_BAD_REQUEST,
                     "Attachment deletion failed: "
                             + e.getMessage()
             );
 
         } catch (Exception e) {
 
-            res.setStatus(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+            getServletContext().log(
+                    "Unable to delete attachment.",
+                    e
             );
 
-            res.getWriter().println(
+            ResponseUtil.sendError(
+                    res,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Unable to delete attachment."
             );
         }
     }
 
-    private long parseComplaintIdForUpload(String pathInfo) {
+    private void writeAttachmentList(
+            List<ComplaintAttachment> attachments,
+            HttpServletResponse response
+    ) throws IOException {
+
+        List<Map<String, Object>> attachmentResponses =
+                new ArrayList<>();
+
+        if (attachments != null) {
+
+            for (ComplaintAttachment attachment :
+                    attachments) {
+
+                attachmentResponses.add(
+                        toAttachmentResponse(
+                                attachment
+                        )
+                );
+            }
+        }
+
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "total",
+                attachmentResponses.size()
+        );
+
+        data.put(
+                "attachments",
+                attachmentResponses
+        );
+
+        ResponseUtil.sendSuccess(
+                response,
+                HttpServletResponse.SC_OK,
+                attachmentResponses.isEmpty()
+                        ? "No attachments found for this complaint."
+                        : "Attachments retrieved successfully.",
+                data
+        );
+    }
+
+    private Map<String, Object> toAttachmentResponse(
+            ComplaintAttachment attachment
+    ) {
+
+        Map<String, Object> data =
+                new LinkedHashMap<>();
+
+        data.put(
+                "id",
+                attachment.getId()
+        );
+
+        Complaint complaint =
+                attachment.getComplaint();
+
+        if (complaint != null) {
+
+            data.put(
+                    "complaintId",
+                    complaint.getId()
+            );
+
+        } else {
+
+            data.put(
+                    "complaintId",
+                    null
+            );
+        }
+
+        data.put(
+                "fileName",
+                attachment.getFileName()
+        );
+
+        data.put(
+                "storedFileName",
+                attachment.getStoredFileName()
+        );
+
+        data.put(
+                "filePath",
+                attachment.getFilePath()
+        );
+
+        data.put(
+                "contentType",
+                attachment.getContentType()
+        );
+
+        data.put(
+                "fileSize",
+                attachment.getFileSize()
+        );
+
+        data.put(
+                "createdAt",
+                attachment.getCreatedAt()
+        );
+
+        return data;
+    }
+
+    private long parseComplaintIdForUpload(
+            String pathInfo
+    ) {
 
         if (pathInfo == null
                 || pathInfo.equals("/")
-                || !pathInfo.startsWith("/complaint/")) {
+                || !pathInfo.startsWith(
+                "/complaint/"
+        )) {
 
             throw new IllegalArgumentException(
                     "Complaint ID is required."
@@ -494,7 +537,9 @@ public class ComplaintAttachmentController extends HttpServlet {
         }
 
         String idValue =
-                pathInfo.substring("/complaint/".length());
+                pathInfo.substring(
+                        "/complaint/".length()
+                );
 
         if (idValue.isBlank()
                 || idValue.contains("/")) {
@@ -504,21 +549,20 @@ public class ComplaintAttachmentController extends HttpServlet {
             );
         }
 
-        try {
-            return Long.parseLong(idValue);
-
-        } catch (NumberFormatException e) {
-
-            throw new IllegalArgumentException(
-                    "Complaint ID must be a valid number."
-            );
-        }
+        return parsePositiveId(
+                idValue,
+                "Complaint ID"
+        );
     }
 
-    private long parseComplaintIdForList(String pathInfo) {
+    private long parseComplaintIdForList(
+            String pathInfo
+    ) {
 
         String idValue =
-                pathInfo.substring("/complaint/".length());
+                pathInfo.substring(
+                        "/complaint/".length()
+                );
 
         if (idValue.isBlank()
                 || idValue.contains("/")) {
@@ -528,29 +572,29 @@ public class ComplaintAttachmentController extends HttpServlet {
             );
         }
 
-        try {
-            return Long.parseLong(idValue);
-
-        } catch (NumberFormatException e) {
-
-            throw new IllegalArgumentException(
-                    "Complaint ID must be a valid number."
-            );
-        }
+        return parsePositiveId(
+                idValue,
+                "Complaint ID"
+        );
     }
 
-    private long parseAttachmentId(String pathInfo) {
+    private long parseAttachmentId(
+            String pathInfo
+    ) {
 
         if (pathInfo == null
                 || pathInfo.equals("/")
-                || pathInfo.startsWith("/complaint/")) {
+                || pathInfo.startsWith(
+                "/complaint/"
+        )) {
 
             throw new IllegalArgumentException(
                     "Attachment ID is required."
             );
         }
 
-        String idValue = pathInfo.substring(1);
+        String idValue =
+                pathInfo.substring(1);
 
         if (idValue.isBlank()
                 || idValue.contains("/")) {
@@ -560,13 +604,37 @@ public class ComplaintAttachmentController extends HttpServlet {
             );
         }
 
+        return parsePositiveId(
+                idValue,
+                "Attachment ID"
+        );
+    }
+
+    private long parsePositiveId(
+            String value,
+            String fieldName
+    ) {
+
         try {
-            return Long.parseLong(idValue);
+
+            long id =
+                    Long.parseLong(value);
+
+            if (id <= 0) {
+
+                throw new IllegalArgumentException(
+                        fieldName
+                                + " must be greater than zero."
+                );
+            }
+
+            return id;
 
         } catch (NumberFormatException e) {
 
             throw new IllegalArgumentException(
-                    "Attachment ID must be a valid number."
+                    fieldName
+                            + " must be a valid number."
             );
         }
     }

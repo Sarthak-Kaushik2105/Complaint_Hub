@@ -32,34 +32,49 @@ public class ComplaintAssignmentServiceImpl
         long agentId = assignment.getAgent().getId();
         long assignedById = assignment.getAssignedBy().getId();
 
-        ValidationUtil.validateId(complaintId,"Complaint Id");
-
-        ValidationUtil.validateId(agentId,"Agent Id");
-
-        ValidationUtil.validateId(assignedById,"Assigned By Id");
+        ValidationUtil.validateId(complaintId, "Complaint Id");
+        ValidationUtil.validateId(agentId, "Agent Id");
+        ValidationUtil.validateId(assignedById, "Assigned By Id");
 
         Complaint complaint = complaintDao.findById(complaintId);
-        if (complaint == null)
+
+        if (complaint == null) {
             throw new IllegalArgumentException("Complaint not found.");
+        }
 
         User agent = userDao.findById(agentId);
-        if (agent == null)
+
+        if (agent == null) {
             throw new IllegalArgumentException("Agent not found.");
-        if (agent.getRole() != UserRole.AGENT)
+        }
+
+        if (agent.getRole() != UserRole.AGENT) {
             throw new IllegalArgumentException("Selected user is not an agent.");
+        }
 
         User assignedBy = userDao.findById(assignedById);
-        if (assignedBy == null)
+
+        if (assignedBy == null) {
             throw new IllegalArgumentException("Assigned By user not found.");
-        if (assignedBy.getRole() != UserRole.ADMIN)
+        }
+
+        if (assignedBy.getRole() != UserRole.ADMIN) {
             throw new IllegalArgumentException("Only an admin can assign a complaint.");
+        }
 
+        ComplaintAssignment activeAssignment =
+                assignmentDao.findActiveAssignmentByComplaintId(
+                        complaintId
+                );
 
-        ComplaintAssignment activeAssignment = assignmentDao.findActiveAssignmentByComplaintId(complaintId);
-
-        if (activeAssignment != null)
+        if (activeAssignment != null) {
             throw new IllegalArgumentException("Complaint already has an active assignment.");
+        }
 
+        if (complaint.getStatus() !=
+                com.complainthub.entity.enums.ComplaintStatus.OPEN) {
+            throw new IllegalArgumentException("Only an OPEN complaint can be assigned.");
+        }
 
         assignment.setComplaint(complaint);
         assignment.setAgent(agent);
@@ -67,6 +82,8 @@ public class ComplaintAssignmentServiceImpl
         assignment.setActive(true);
 
         assignmentDao.save(assignment);
+        complaint.setStatus(com.complainthub.entity.enums.ComplaintStatus.ASSIGNED);
+        complaintDao.update(complaint);
 
         return assignment;
     }
