@@ -27,6 +27,8 @@ function entryLabel(entry) {
       return "Complaint Closed";
     case "status_change":
       return "Status Changed";
+    case "category_change":
+      return "Category Changed";
     default:
       return `${entry.role} Update`;
   }

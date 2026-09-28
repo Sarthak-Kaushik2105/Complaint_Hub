@@ -1,0 +1,231 @@
+.profile-avatar {
+  position: relative;
+  margin: 0 auto;
+  border: none;
+  padding: 0;
+  background: transparent;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.profile-avatar.medium {
+  width: 65px;
+  height: 65px;
+}
+
+.profile-avatar.large {
+  width: 104px;
+  height: 104px;
+}
+
+.profile-avatar::before,
+.profile-avatar img,
+.profile-avatar > span:first-child {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.profile-avatar img {
+  display: block;
+  object-fit: cover;
+}
+
+.profile-avatar > span:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3edff;
+  color: #7c3aed;
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.profile-avatar.large > span:first-child {
+  font-size: 30px;
+}
+
+.profile-avatar-camera {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #7c3aed;
+  color: #fff;
+  border: 2px solid #fff;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.profile-edit-trigger {
+  border: 1px solid #ddd6fe;
+  background: #f5f3ff;
+  color: #6d28d9;
+  border-radius: 10px;
+  padding: 9px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-edit-trigger:hover {
+  background: #ede9fe;
+}
+
+.profile-photo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.profile-photo-modal {
+  width: 100%;
+  max-width: 430px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.profile-photo-header,
+.profile-photo-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.profile-photo-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 17px;
+}
+
+.profile-photo-header p {
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.profile-photo-close {
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.profile-photo-body {
+  padding: 24px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-photo-preview-wrap {
+  min-height: 108px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.profile-photo-preview {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #ede9fe;
+}
+
+.profile-choose-btn,
+.profile-save-btn,
+.profile-cancel-btn {
+  border-radius: 10px;
+  padding: 10px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-choose-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #ddd6fe;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.profile-photo-help {
+  margin-top: 9px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.profile-photo-error {
+  margin-top: 10px;
+  color: #b91c1c;
+  font-size: 12px;
+  text-align: center;
+}
+
+.profile-photo-footer {
+  border-top: 1px solid #f1f5f9;
+  border-bottom: none;
+  justify-content: flex-end;
+}
+
+.profile-cancel-btn {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+}
+
+.profile-save-btn {
+  border: none;
+  background: #7c3aed;
+  color: #fff;
+}
+
+.profile-save-btn:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+.profile-choose-btn:disabled,
+.profile-cancel-btn:disabled,
+.profile-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile-avatar.small {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+}
+
+.profile-avatar.small > span:first-child {
+  font-size: 13px;
+}
+
+.profile-avatar.small .profile-avatar-camera {
+  display: none !important;
+}

@@ -365,6 +365,12 @@ function saveComplaints(list) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
+function requireComplaint(list, id) {
+  const complaint = list.find((item) => String(item.id) === String(id));
+  if (!complaint) throw new Error("Complaint not found.");
+  return complaint;
+}
+
 // ---------------------------------------------------------------------------
 // Reads
 // ---------------------------------------------------------------------------
@@ -390,13 +396,13 @@ export function getComplaintsByAgent(agentName) {
 // ---------------------------------------------------------------------------
 
 // TODO: replace with `return api.post("/complaints", data)` once the backend exists.
-export function addComplaint({ title, category, priority, description, createdBy, attachments }) {
+export function addComplaint({ title, category, description, createdBy, attachments }) {
   const list = loadComplaints();
   const newComplaint = {
     id: Date.now(),
     title,
     category,
-    priority: priority || "Medium",
+    priority: "High",
     description,
     status: STATUS.OPEN,
     createdAt: nowIso(),
@@ -419,14 +425,27 @@ export function addComplaint({ title, category, priority, description, createdBy
 // Admin assigns (or reassigns, e.g. after NEEDS_REASSIGNMENT) an agent.
 // TODO: replace with `return api.post(`/complaints/${id}/assign`, { agentName })`.
 export function assignAgent(id, agentName) {
+  if (!AVAILABLE_AGENTS.some((agent) => agent.name === agentName)) {
+    throw new Error("Invalid agent selected.");
+  }
+
   const list = loadComplaints();
+  requireComplaint(list, id);
   const updated = list.map((c) => {
     if (String(c.id) !== String(id)) return c;
+
+    if (![STATUS.OPEN, STATUS.NEEDS_REASSIGNMENT].includes(c.status)) {
+      throw new Error("This complaint cannot be assigned in its current state.");
+    }
+
     const from = c.status;
-    const next = { ...c, assignedAgent: agentName, status: STATUS.ASSIGNED };
+    const wasReassignment = from === STATUS.NEEDS_REASSIGNMENT;
+    const next = { ...c, assignedAgent: agentName, status: STATUS.ASSIGNED, updates: [...c.updates] };
     pushSystemEntry(next, {
       type: "status_change",
-      description: `Assigned to ${agentName}.`,
+      description: wasReassignment
+        ? `Complaint reassigned to ${agentName} by Admin.`
+        : `Complaint assigned to ${agentName} by Admin.`,
       statusFrom: from,
       statusTo: STATUS.ASSIGNED,
     });
@@ -436,19 +455,105 @@ export function assignAgent(id, agentName) {
   return getComplaintById(id);
 }
 
-// Admin/Agent action for the OPEN → REJECTED branch.
-// TODO: replace with `return api.post(`/complaints/${id}/reject`, { reason })`.
-export function rejectComplaint(id, { reason, author = "Admin" } = {}) {
+// Agent explicitly accepts an assigned complaint. Only the currently assigned
+// agent may accept, and only while the complaint is waiting for a decision.
+export function acceptComplaint(id, agentName) {
+  if (!agentName) throw new Error("Agent name is required.");
+
   const list = loadComplaints();
+  requireComplaint(list, id);
   const updated = list.map((c) => {
     if (String(c.id) !== String(id)) return c;
-    const from = c.status;
-    const next = { ...c, status: STATUS.REJECTED };
+    if (c.assignedAgent !== agentName) {
+      throw new Error("You are not the agent assigned to this complaint.");
+    }
+    if (c.status !== STATUS.ASSIGNED) {
+      throw new Error("This complaint is not awaiting agent acceptance.");
+    }
+
+    const next = { ...c, status: STATUS.IN_PROGRESS, updates: [...c.updates] };
     pushSystemEntry(next, {
       type: "status_change",
-      description: reason || `Complaint rejected by ${author}.`,
-      statusFrom: from,
+      description: `Complaint accepted by ${agentName}.`,
+      statusFrom: STATUS.ASSIGNED,
+      statusTo: STATUS.IN_PROGRESS,
+    });
+    return next;
+  });
+  saveComplaints(updated);
+  return getComplaintById(id);
+}
+
+// Agent rejection sends the complaint back to the admin queue instead of
+// using the terminal REJECTED state. The previous agent remains auditable in
+// the timeline, while assignedAgent is cleared so the agent is no longer
+// treated as responsible for the complaint.
+export function rejectComplaint(id, { reason, author = "Admin", actorRole = "Admin" } = {}) {
+  const cleanReason = (reason || "").trim();
+  if (actorRole === "Agent" && !cleanReason) {
+    throw new Error("Please provide a reason for rejecting the complaint.");
+  }
+
+  const list = loadComplaints();
+  requireComplaint(list, id);
+  const updated = list.map((c) => {
+    if (String(c.id) !== String(id)) return c;
+
+    if (actorRole === "Agent") {
+      if (c.assignedAgent !== author) {
+        throw new Error("You are not the agent assigned to this complaint.");
+      }
+      if (c.status !== STATUS.ASSIGNED) {
+        throw new Error("Only an assigned complaint awaiting acceptance can be rejected.");
+      }
+
+      const next = { ...c, assignedAgent: null, status: STATUS.NEEDS_REASSIGNMENT, updates: [...c.updates] };
+      pushSystemEntry(next, {
+        type: "status_change",
+        description: `Complaint rejected by ${author}. Reason: ${cleanReason}`,
+        statusFrom: STATUS.ASSIGNED,
+        statusTo: STATUS.NEEDS_REASSIGNMENT,
+      });
+      return next;
+    }
+
+    if (c.status !== STATUS.OPEN) {
+      throw new Error("Only an open complaint can be rejected by Admin.");
+    }
+
+    const next = { ...c, status: STATUS.REJECTED, updates: [...c.updates] };
+    pushSystemEntry(next, {
+      type: "status_change",
+      description: cleanReason || `Complaint rejected by ${author}.`,
+      statusFrom: c.status,
       statusTo: STATUS.REJECTED,
+    });
+    return next;
+  });
+  saveComplaints(updated);
+  return getComplaintById(id);
+}
+
+// Admin verifies/corrects the category selected by the customer. The old
+// value remains visible in the audit timeline through this system entry.
+export function updateCategory(id, category, { author = "Admin" } = {}) {
+  if (!CATEGORIES.includes(category)) {
+    throw new Error("Invalid category selected.");
+  }
+
+  const list = loadComplaints();
+  requireComplaint(list, id);
+  const updated = list.map((c) => {
+    if (String(c.id) !== String(id)) return c;
+    if (c.category === category) return c;
+
+    const previous = c.category || "Other";
+    const next = { ...c, category, updates: [...c.updates] };
+    pushSystemEntry(next, {
+      type: "category_change",
+      description: `Category changed from ${previous} to ${category} by ${author}.`,
+      statusFrom: null,
+      statusTo: null,
     });
     return next;
   });
@@ -468,6 +573,7 @@ export function addUpdate(id, { title, description, author, role }) {
     throw new Error("Please provide an update title or description.");
   }
   const list = loadComplaints();
+  requireComplaint(list, id);
   const updated = list.map((c) => {
     if (String(c.id) !== String(id)) return c;
     const next = { ...c, updates: [...c.updates] };
@@ -482,15 +588,8 @@ export function addUpdate(id, { title, description, author, role }) {
       statusFrom: null,
       statusTo: null,
     });
-    if (role === "Agent" && next.status === STATUS.ASSIGNED) {
-      const from = next.status;
-      next.status = STATUS.IN_PROGRESS;
-      pushSystemEntry(next, {
-        type: "status_change",
-        description: "Agent started working on this complaint.",
-        statusFrom: from,
-        statusTo: STATUS.IN_PROGRESS,
-      });
+    if (role === "Agent" && next.status !== STATUS.IN_PROGRESS) {
+      throw new Error("Accept the complaint before adding agent updates.");
     }
     return next;
   });
@@ -502,8 +601,12 @@ export function addUpdate(id, { title, description, author, role }) {
 // TODO: replace with `return api.post(`/complaints/${id}/resolve`, data)`.
 export function resolveComplaint(id, { description, author } = {}) {
   const list = loadComplaints();
+  requireComplaint(list, id);
   const updated = list.map((c) => {
     if (String(c.id) !== String(id)) return c;
+    if (c.status !== STATUS.IN_PROGRESS) {
+      throw new Error("Only an in-progress complaint can be marked as resolved.");
+    }
     const from = c.status;
     const next = { ...c, status: STATUS.RESOLVED, updates: [...c.updates] };
     if (description && description.trim()) {
@@ -536,8 +639,12 @@ export function resolveComplaint(id, { description, author } = {}) {
 // TODO: replace with `return api.post(`/complaints/${id}/confirm`, { solved })`.
 export function confirmResolution(id, solved) {
   const list = loadComplaints();
+  requireComplaint(list, id);
   const updated = list.map((c) => {
     if (String(c.id) !== String(id)) return c;
+    if (c.status !== STATUS.RESOLVED) {
+      throw new Error("Only a resolved complaint can be confirmed.");
+    }
     const next = { ...c, updates: [...c.updates] };
     if (solved) {
       pushSystemEntry(next, {
@@ -573,7 +680,11 @@ export function confirmResolution(id, solved) {
 // TODO: replace with `return api.patch(`/complaints/${id}`, { priority })`.
 export function updatePriority(id, priority) {
   const list = loadComplaints();
+  requireComplaint(list, id);
   const updated = list.map((c) => (String(c.id) === String(id) ? { ...c, priority } : c));
   saveComplaints(updated);
   return getComplaintById(id);
 }
+
+
+

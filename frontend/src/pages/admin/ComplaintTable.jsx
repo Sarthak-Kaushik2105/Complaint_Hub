@@ -44,15 +44,22 @@ function ComplaintTable() {
     }
   };
 
-  const renderAgentCell = (assignedAgent) => {
+  const renderAgentCell = (assignedAgent, status) => {
     if (!assignedAgent) {
-      return <span className="agent-status unassigned">Unassigned</span>;
+      return (
+        <span className={`agent-status ${status === STATUS.NEEDS_REASSIGNMENT ? "rejected" : "unassigned"}`}>
+          {status === STATUS.NEEDS_REASSIGNMENT ? "Needs Reassignment" : "Unassigned"}
+        </span>
+      );
     }
 
+    const waiting = status === STATUS.ASSIGNED;
     return (
       <div className="agent-cell">
         <span className="agent-name">{assignedAgent}</span>
-        <span className="agent-status accepted">Assigned</span>
+        <span className={`agent-status ${waiting ? "pending-response" : "accepted"}`}>
+          {waiting ? "Waiting for Acceptance" : "Assigned"}
+        </span>
       </div>
     );
   };
@@ -106,7 +113,7 @@ function ComplaintTable() {
                   </span>
                 </td>
 
-                <td>{renderAgentCell(item.assignedAgent)}</td>
+                <td>{renderAgentCell(item.assignedAgent, item.status)}</td>
 
                 <td>
                   <button
@@ -132,3 +139,4 @@ function ComplaintTable() {
 }
 
 export default ComplaintTable;
+

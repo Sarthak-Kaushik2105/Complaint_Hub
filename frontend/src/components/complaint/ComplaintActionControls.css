@@ -1,0 +1,169 @@
+.panel-action-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 18px;
+  padding: 11px 13px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.panel-action-error button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.category-editor {
+  background: #faf9ff;
+  border: 1px solid #ede9fe;
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.editor-heading h4 {
+  margin-bottom: 5px;
+}
+
+.editor-heading p {
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.category-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.category-editor-row select {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: #334155;
+  font-size: 13.5px;
+  font-family: inherit;
+}
+
+.secondary-action-btn {
+  border: 1px solid #ddd6fe;
+  background: #fff;
+  color: #6d28d9;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.secondary-action-btn:hover {
+  background: #f5f3ff;
+}
+
+.agent-decision-section {
+  background: #f8f7ff;
+  border: 1px solid #e9e3ff;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.agent-decision-header h4 {
+  margin-bottom: 5px;
+  color: #4c1d95;
+}
+
+.agent-decision-header p {
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.agent-decision-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.accept-btn,
+.reject-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.accept-btn {
+  border: none;
+  background: #16a34a;
+  color: #fff;
+}
+
+.accept-btn:hover {
+  background: #15803d;
+}
+
+.reject-confirm-btn {
+  border: none;
+  background: #dc2626;
+  color: #fff;
+}
+
+.reject-confirm-btn:hover {
+  background: #b91c1c;
+}
+
+.reject-form {
+  margin-top: 14px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 11px;
+}
+
+.reject-form label {
+  display: block;
+  margin-bottom: 6px;
+  color: #374151;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.reject-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: #334155;
+  resize: vertical;
+}
+
+@media (max-width: 600px) {
+  .category-editor-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .category-editor-row select,
+  .secondary-action-btn {
+    width: 100%;
+  }
+}

@@ -5,7 +5,6 @@ import {
   addComplaint,
   getComplaints,
   CATEGORIES,
-  PRIORITIES,
   STATUS_LABELS,
 } from "../../utils/mockComplaints";
 import ComplaintAttachmentPicker from "../../components/complaint/ComplaintAttachmentPicker";
@@ -25,7 +24,6 @@ function RaiseComplaint() {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
-  const [priority, setPriority] = useState("Medium");
   const [description, setDescription] = useState("");
   const [attachmentItems, setAttachmentItems] = useState([]); // [{attachment, previewUrl}]
   const [submitted, setSubmitted] = useState(false);
@@ -49,7 +47,6 @@ function RaiseComplaint() {
     addComplaint({
       title,
       category,
-      priority,
       description,
       createdBy: "Customer",
       attachments: attachmentItems.map((it) => it.attachment),
@@ -80,13 +77,6 @@ function RaiseComplaint() {
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
             {CATEGORIES.map((c) => (
               <option key={c}>{c}</option>
-            ))}
-          </select>
-
-          <label>Priority</label>
-          <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-            {PRIORITIES.map((p) => (
-              <option key={p}>{p}</option>
             ))}
           </select>
 
