@@ -74,7 +74,7 @@ The project was developed as a team project, with different parts of the applica
 
 ### Database
 
-- MySQL
+- Oracle Live SQL
 
 ### Development Tools
 
